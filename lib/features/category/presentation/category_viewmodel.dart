@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class CategoryViewModel extends StateNotifier<void> {
   CategoryViewModel() : super(null);
