@@ -1,0 +1,5 @@
+features:
+  - name: auth
+  - name: expense
+  - name: dashboard
+  - name: category
