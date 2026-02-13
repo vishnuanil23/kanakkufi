@@ -6,7 +6,7 @@ class DashboardState {
 
   const DashboardState({
     this.selectedPeriod = 'Week',
-    this.viewType = 'Monthly',
+    this.viewType = 'All',
     this.expenses = const [],
     this.totalExpenses = 0.0,
   });

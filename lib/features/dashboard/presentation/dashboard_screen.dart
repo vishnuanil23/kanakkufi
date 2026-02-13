@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kanakkufi/features/pregnancy/presentation/pregnancy_state.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../shared/widgets/confirmation_dialog.dart';
+import '../../auth/presentation/auth_viewmodel.dart';
+import '../../profile/presentation/profile_viewmodel.dart';
+import '../../profile/presentation/edit_profile_screen.dart';
+import '../../pregnancy/domain/pregnancy_calculator.dart';
+import '../../pregnancy/presentation/pregnancy_viewmodel.dart';
 import 'dashboard_viewmodel.dart';
 import 'dashboard_state.dart';
 
@@ -13,6 +21,14 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardProvider);
     final viewModel = ref.read(dashboardProvider.notifier);
+    final pregnancyState = ref.watch(pregnancyProvider);
+    final isPregEnabled = pregnancyState.isEnabled;
+
+    ref.listen(pregnancyProvider, (prev, next) {
+      if (!next.isEnabled) {
+        ref.read(dashboardProvider.notifier).resetToDefaultView();
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -23,7 +39,7 @@ class DashboardScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              _buildHeader(),
+              _buildHeader(context, ref),
               const SizedBox(height: 24),
               _buildTotalBalanceCard(state.totalExpenses, state),
               const SizedBox(height: 32),
@@ -31,7 +47,12 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               _buildHookCard(),
               const SizedBox(height: 32),
-              _buildStatisticsSection(state, viewModel),
+              _buildStatisticsSection(
+                state,
+                viewModel,
+                pregnancyState,
+                isPregEnabled,
+              ),
               const SizedBox(height: 32),
               _buildSectionHeader("Recent Transactions"),
               const SizedBox(height: 12),
@@ -43,7 +64,27 @@ class DashboardScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primary,
-        onPressed: () {},
+        onPressed: () async {
+          final result = await context.push('/add-expense');
+          if (result is Map<String, dynamic>) {
+            final amount = result["amount"] as double?;
+            final title = result["title"] as String?;
+            final date = result["date"] as DateTime?;
+
+            if (amount != null && title != null && date != null) {
+              viewModel.addExpense(
+                title: title,
+                amount: amount,
+                date: date,
+              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Expense added")),
+                );
+              }
+            }
+          }
+        },
         elevation: 4,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text(
@@ -54,7 +95,14 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+    final profileState = ref.watch(profileProvider);
+    final name =
+        profileState.profile?.fullName?.isNotEmpty == true
+            ? profileState.profile!.fullName!
+            : 'Hello';
+    final pregnancy = ref.watch(pregnancyProvider).profile;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -72,33 +120,103 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              "Vishnu",
+              "Hello, $name",
               style: GoogleFonts.inter(
                 fontSize: 28,
                 color: AppColors.text,
                 fontWeight: FontWeight.bold,
               ),
             ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
-              BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 20,
-                offset: Offset(0, 10),
+            if (pregnancy != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                "Week ${PregnancyCalculator.calculateWeek(pregnancy.startDate)} • "
+                "Trimester ${PregnancyCalculator.calculateTrimester(PregnancyCalculator.calculateWeek(pregnancy.startDate))}",
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
-          ),
-          child: const Icon(
-            Icons.notifications_none_rounded,
-            color: AppColors.text,
-            size: 24,
-          ),
+          ],
+        ),
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () {
+                showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.white,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                  ),
+                  builder: (_) => const EditProfileSheet(),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.person,
+                  color: AppColors.text,
+                  size: 24,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: () async {
+                final confirmed = await showConfirmationDialog(
+                  context: context,
+                  title: 'Logout',
+                  message: 'Are you sure you want to logout?',
+                  confirmText: 'Logout',
+                  cancelText: 'Cancel',
+                  isDangerous: true,
+                );
+
+                if (confirmed == true) {
+                  await ref.read(authProvider.notifier).logout();
+                  if (context.mounted) {
+                    context.go('/auth');
+                  }
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: AppColors.text,
+                  size: 24,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -391,6 +509,8 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildStatisticsSection(
     DashboardState state,
     DashboardViewModel viewModel,
+    PregnancyState pregnancyState,
+    bool isPregEnabled,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,237 +526,191 @@ class DashboardScreen extends ConsumerWidget {
                 color: AppColors.text,
               ),
             ),
-            _buildViewTypeToggle(state, viewModel),
+            if (pregnancyState.isEnabled)
+              _buildViewTypeToggle(state, viewModel),
           ],
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children:
-              state.viewType == 'Trimester'
-                  ? [
-                    _buildPeriodTab('Trimester 1', state, viewModel),
-                    _buildPeriodTab('Trimester 2', state, viewModel),
-                    _buildPeriodTab('Trimester 3', state, viewModel),
-                  ]
-                  : [
-                    _buildPeriodTab('Week', state, viewModel),
-                    _buildPeriodTab('Month', state, viewModel),
-                    _buildPeriodTab('Year', state, viewModel),
-                  ],
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SizeTransition(
+                sizeFactor: animation,
+                axis: Axis.vertical,
+                child: child,
+              ),
+            );
+          },
+          child:
+              (isPregEnabled && state.viewType == 'Trimester')
+                  ? _buildTrimesterTabs(state, viewModel)
+                  : _buildNormalTabs(state, viewModel),
         ),
         const SizedBox(height: 24),
-        Container(
-          height: 250,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Stack(
-            children: [
-              // Vertical bars background
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(
-                    6,
-                    (index) => Container(
-                      width: 40,
-                      decoration: BoxDecoration(
-                        color:
-                            index % 2 == 0
-                                ? AppColors.primary.withAlpha(10)
-                                : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          child: Container(
+            height: 250,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Stack(
+              children: [
+                // Vertical bars background
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(
+                      6,
+                      (index) => Container(
+                        width: 40,
+                        decoration: BoxDecoration(
+                          color:
+                              index % 2 == 0
+                                  ? AppColors.primary.withAlpha(10)
+                                  : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 40, 16, 20),
-                child: LineChart(
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeInOutCubic,
-                  LineChartData(
-                    gridData: const FlGridData(show: false),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            final List<String> titles;
-                            if (state.viewType == 'Trimester') {
-                              if (state.selectedPeriod == 'Trimester 1') {
-                                titles = ['Wk 1', 'Wk 4', 'Wk 8', 'Wk 12'];
-                              } else if (state.selectedPeriod ==
-                                  'Trimester 2') {
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 40, 16, 20),
+                  child: LineChart(
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.easeInOutCubic,
+                    LineChartData(
+                      gridData: const FlGridData(show: false),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        leftTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              final List<String> titles;
+                              if (isPregEnabled &&
+                                  state.viewType == 'Trimester') {
+                                if (state.selectedPeriod == 'Trimester 1') {
+                                  titles = ['Wk 1', 'Wk 4', 'Wk 8', 'Wk 12'];
+                                } else if (state.selectedPeriod ==
+                                    'Trimester 2') {
+                                  titles = [
+                                    'Wk 13',
+                                    'Wk 16',
+                                    'Wk 20',
+                                    'Wk 24',
+                                    'Wk 27',
+                                  ];
+                                } else {
+                                  titles = ['Wk 28', 'Wk 32', 'Wk 36', 'Wk 40'];
+                                }
+                              } else if (state.selectedPeriod == 'Week') {
                                 titles = [
-                                  'Wk 13',
-                                  'Wk 16',
-                                  'Wk 20',
-                                  'Wk 24',
-                                  'Wk 27',
+                                  'Mon',
+                                  'Tue',
+                                  'Wed',
+                                  'Thu',
+                                  'Fri',
+                                  'Sat',
+                                  'Sun',
                                 ];
+                              } else if (state.selectedPeriod == 'Month') {
+                                titles = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
                               } else {
-                                titles = ['Wk 28', 'Wk 32', 'Wk 36', 'Wk 40'];
+                                // Year (Jan..Dec)
+                                titles = _yearMonthLabels();
                               }
-                            } else if (state.selectedPeriod == 'Week') {
-                              titles = [
-                                'Mon',
-                                'Tue',
-                                'Wed',
-                                'Thu',
-                                'Fri',
-                                'Sat',
-                                'Sun',
-                              ];
-                            } else if (state.selectedPeriod == 'Month') {
-                              titles = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
-                            } else {
-                              // Year
-                              titles = [
-                                'Jan',
-                                'Mar',
-                                'May',
-                                'Jul',
-                                'Sep',
-                                'Nov',
-                              ];
-                            }
 
-                            if (value.toInt() < titles.length) {
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  titles[value.toInt()],
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 10,
+                              if (value.toInt() < titles.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    titles[value.toInt()],
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 10,
+                                    ),
                                   ),
-                                ),
-                              );
-                            }
-                            return const Text('');
-                          },
-                          interval: 1,
-                        ),
-                      ),
-                    ),
-                    borderData: FlBorderData(show: false),
-                    lineTouchData: LineTouchData(
-                      touchTooltipData: LineTouchTooltipData(
-                        getTooltipColor: (_) => AppColors.primary,
-                        tooltipRoundedRadius: 8,
-                        getTooltipItems: (List<LineBarSpot> touchedSpots) {
-                          return touchedSpots.map((barSpot) {
-                            return LineTooltipItem(
-                              '₹${(barSpot.y * 100).toStringAsFixed(2)}',
-                              const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          }).toList();
-                        },
-                      ),
-                      handleBuiltInTouches: true,
-                    ),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots:
-                            state.viewType == 'Trimester'
-                                ? (state.selectedPeriod == 'Trimester 1'
-                                    ? const [
-                                      FlSpot(0, 1.2),
-                                      FlSpot(1, 1.8),
-                                      FlSpot(2, 1.5),
-                                      FlSpot(3, 2.2),
-                                    ]
-                                    : state.selectedPeriod == 'Trimester 2'
-                                    ? const [
-                                      FlSpot(0, 2.0),
-                                      FlSpot(1, 2.5),
-                                      FlSpot(2, 2.8),
-                                      FlSpot(3, 3.2),
-                                      FlSpot(4, 3.5),
-                                    ]
-                                    : const [
-                                      FlSpot(0, 3.8),
-                                      FlSpot(1, 4.2),
-                                      FlSpot(2, 3.5),
-                                      FlSpot(3, 3.0),
-                                    ])
-                                : state.selectedPeriod == 'Week'
-                                ? const [
-                                  FlSpot(0, 1.2),
-                                  FlSpot(1, 1.8),
-                                  FlSpot(2, 1.4),
-                                  FlSpot(3, 2.5),
-                                  FlSpot(4, 2.1),
-                                  FlSpot(5, 2.8),
-                                  FlSpot(6, 2.4),
-                                ]
-                                : state.selectedPeriod == 'Month'
-                                ? const [
-                                  FlSpot(0, 2.0),
-                                  FlSpot(1, 1.5),
-                                  FlSpot(2, 2.8),
-                                  FlSpot(3, 3.2),
-                                ]
-                                : const [
-                                  FlSpot(0, 1.0),
-                                  FlSpot(1, 2.2),
-                                  FlSpot(2, 1.8),
-                                  FlSpot(3, 3.5),
-                                  FlSpot(4, 2.9),
-                                  FlSpot(5, 4.0),
-                                ],
-                        isCurved: true,
-                        curveSmoothness: 0.35,
-                        color: AppColors.primary,
-                        barWidth: 4,
-                        isStrokeCapRound: true,
-                        dotData: FlDotData(
-                          show: true,
-                          getDotPainter:
-                              (spot, percent, barData, index) =>
-                                  FlDotCirclePainter(
-                                    radius: 4,
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                    strokeColor: AppColors.primary,
-                                  ),
-                        ),
-                        belowBarData: BarAreaData(
-                          show: true,
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary.withAlpha(50),
-                              AppColors.primary.withAlpha(0),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
+                                );
+                              }
+                              return const Text('');
+                            },
+                            interval: 1,
                           ),
                         ),
                       ),
-                    ],
+                      borderData: FlBorderData(show: false),
+                      lineTouchData: LineTouchData(
+                        touchTooltipData: LineTouchTooltipData(
+                          getTooltipColor: (_) => AppColors.primary,
+                          tooltipRoundedRadius: 8,
+                        getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                          return touchedSpots.map((barSpot) {
+                            return LineTooltipItem(
+                              '₹${barSpot.y.toStringAsFixed(2)}',
+                              const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            }).toList();
+                          },
+                        ),
+                        handleBuiltInTouches: true,
+                      ),
+                      lineBarsData: [
+                        LineChartBarData(
+                        spots: _buildChartSpots(state),
+                          isCurved: true,
+                          curveSmoothness: 0.35,
+                          color: AppColors.primary,
+                          barWidth: 4,
+                          isStrokeCapRound: true,
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter:
+                                (spot, percent, barData, index) =>
+                                    FlDotCirclePainter(
+                                      radius: 4,
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                      strokeColor: AppColors.primary,
+                                    ),
+                          ),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary.withAlpha(50),
+                                AppColors.primary.withAlpha(0),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -655,11 +729,117 @@ class DashboardScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          _buildToggleButton('Monthly', state, viewModel),
+          _buildToggleButton('All', state, viewModel),
           _buildToggleButton('Trimester', state, viewModel),
         ],
       ),
     );
+  }
+
+  Widget _buildNormalTabs(
+    DashboardState state,
+    DashboardViewModel viewModel,
+  ) {
+    return Row(
+      key: const ValueKey("normal"),
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildPeriodTab('Week', state, viewModel),
+        _buildPeriodTab('Month', state, viewModel),
+        _buildPeriodTab('Year', state, viewModel),
+      ],
+    );
+  }
+
+  Widget _buildTrimesterTabs(
+    DashboardState state,
+    DashboardViewModel viewModel,
+  ) {
+    return Row(
+      key: const ValueKey("preg"),
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildPeriodTab('Trimester 1', state, viewModel),
+        _buildPeriodTab('Trimester 2', state, viewModel),
+        _buildPeriodTab('Trimester 3', state, viewModel),
+      ],
+    );
+  }
+
+  List<FlSpot> _buildChartSpots(DashboardState state) {
+    final now = DateTime.now();
+    final expenses =
+        state.expenses.where((e) => e['dateTime'] is DateTime).toList();
+
+    if (expenses.isEmpty) {
+      return const [FlSpot(0, 0), FlSpot(1, 0)];
+    }
+
+    if (state.viewType == 'Trimester') {
+      final buckets = List<double>.filled(4, 0);
+      for (final e in expenses) {
+        final date = e['dateTime'] as DateTime;
+        final diffDays = now.difference(date).inDays;
+        if (diffDays < 0 || diffDays > 83) continue;
+        final index = 3 - (diffDays ~/ 28);
+        if (index >= 0 && index < 4) {
+          buckets[index] += (e['amount'] as num).toDouble();
+        }
+      }
+      return List.generate(4, (i) => FlSpot(i.toDouble(), buckets[i]));
+    }
+
+    switch (state.selectedPeriod) {
+      case 'Week':
+        final buckets = List<double>.filled(7, 0);
+        final start = DateTime(now.year, now.month, now.day)
+            .subtract(const Duration(days: 6));
+        for (final e in expenses) {
+          final date = e['dateTime'] as DateTime;
+          if (date.isBefore(start) || date.isAfter(now)) continue;
+          final index = date.weekday - 1; // Mon=0 ... Sun=6
+          if (index >= 0 && index < 7) {
+            buckets[index] += (e['amount'] as num).toDouble();
+          }
+        }
+        return List.generate(7, (i) => FlSpot(i.toDouble(), buckets[i]));
+      case 'Month':
+        final buckets = List<double>.filled(4, 0);
+        for (final e in expenses) {
+          final date = e['dateTime'] as DateTime;
+          if (date.year != now.year || date.month != now.month) continue;
+          final weekIndex = ((date.day - 1) ~/ 7).clamp(0, 3);
+          buckets[weekIndex] += (e['amount'] as num).toDouble();
+        }
+        return List.generate(4, (i) => FlSpot(i.toDouble(), buckets[i]));
+      case 'Year':
+      default:
+        final buckets = List<double>.filled(12, 0);
+        for (final e in expenses) {
+          final date = e['dateTime'] as DateTime;
+          if (date.year != now.year) continue;
+          final index = date.month - 1; // Jan=0
+          buckets[index] += (e['amount'] as num).toDouble();
+        }
+        return List.generate(12, (i) => FlSpot(i.toDouble(), buckets[i]));
+    }
+  }
+
+  List<String> _yearMonthLabels() {
+    return const [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
   }
 
   Widget _buildToggleButton(

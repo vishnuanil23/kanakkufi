@@ -3,3 +3,4 @@ features:
   - name: expense
   - name: dashboard
   - name: category
+  - name: pregnancy

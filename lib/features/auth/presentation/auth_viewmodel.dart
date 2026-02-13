@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kanakkufi/features/profile/domain/profile_entity.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/supabase_client_provider.dart';
 
@@ -44,11 +45,41 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
         token: token,
       );
 
+      await _handleUserProfile();
+
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
     }
   }
 
+  Future<ProfileEntity?> _handleUserProfile() async {
+    final user = _client.auth.currentUser;
+
+    if (user == null) return null;
+
+    final data =
+        await _client.from('users').select().eq('id', user.id).maybeSingle();
+
+    if (data == null) {
+      final inserted = await _client
+          .from('users')
+          .insert({
+            'id': user.id,
+            'email': user.email,
+          })
+          .select()
+          .single();
+
+      return ProfileEntity.fromJson(inserted);
+    }
+
+    return ProfileEntity.fromJson(data);
+  }
+
   User? get currentUser => _client.auth.currentUser;
+  Future<void> logout() async {
+  await _client.auth.signOut();
+}
+
 }

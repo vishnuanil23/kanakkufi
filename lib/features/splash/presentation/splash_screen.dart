@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   String _version = "";
 
   @override
@@ -27,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (mounted) {
         setState(() {
           _version =
-              "Version ${packageInfo.version} • Build ${packageInfo.buildNumber}";
+              "Version ${packageInfo.version}";
         });
       }
     } catch (e) {
@@ -36,9 +38,19 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     // Simulate a delay for the splash screen
-    await Future.delayed(const Duration(seconds: 5));
+    await Future.delayed(const Duration(seconds: 2));
+
     if (mounted) {
-      context.go('/auth');
+      // Check authentication state
+      final session = Supabase.instance.client.auth.currentSession;
+
+      if (session != null) {
+        // User is logged in, go to dashboard
+        context.go('/dashboard');
+      } else {
+        // User is not logged in, go to auth
+        context.go('/auth');
+      }
     }
   }
 
