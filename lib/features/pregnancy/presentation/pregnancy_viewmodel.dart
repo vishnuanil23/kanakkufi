@@ -20,62 +20,70 @@ class PregnancyViewModel extends StateNotifier<PregnancyState> {
   SupabaseClient get _client =>
       ref.read(supabaseClientProvider);
 
-  Future<void> fetchActiveProfile() async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) return;
+Future<void> fetchActiveProfile() async {
+  final userId = _client.auth.currentUser?.id;
+  if (userId == null) return;
 
-    final data = await _client
-        .from('user_pregnancy_profiles')
-        .select()
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .maybeSingle();
+  final data = await _client
+      .from('user_pregnancy_profiles')
+      .select()
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (data != null) {
-      state = state.copyWith(
-        profile: PregnancyEntity.fromJson(data),
-      );
-    }
+  if (data != null) {
+    state = state.copyWith(
+      profile: PregnancyEntity.fromJson(data),
+    );
   }
+}
 
-Future<void> enablePregnancy({
-  required int week,
-  required int day,
+Future<void> togglePregnancy({
+  int? week,
+  int? day,
 }) async {
   final userId = _client.auth.currentUser?.id;
   if (userId == null) return;
 
-  final startDate =
-      PregnancyCalculator.calculateStartDate(
-    week: week,
-    day: day,
-  );
+  final existingProfile = state.profile;
 
-  final inserted = await _client
-      .from('user_pregnancy_profiles')
-      .insert({
-        'user_id': userId,
-        'pregnancy_start_date':
-            startDate.toIso8601String(),
-        'is_active': true,
-      })
-      .select()
-      .single();
+  if (existingProfile != null) {
+    // Just toggle is_active
+    final newStatus = !existingProfile.isActive;
 
-  state = state.copyWith(
-    profile: PregnancyEntity.fromJson(inserted),
-  );
-}
-
-  Future<void> disablePregnancy() async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) return;
-
-    await _client
+    final updated = await _client
         .from('user_pregnancy_profiles')
-        .update({'is_active': false})
-        .eq('user_id', userId);
+        .update({'is_active': newStatus})
+        .eq('user_id', userId)
+        .select()
+        .single();
 
-    state = const PregnancyState();
+    state = state.copyWith(
+      profile: PregnancyEntity.fromJson(updated),
+    );
+  } else {
+    // First time enable — require week/day
+    if (week == null || day == null) return;
+
+    final startDate =
+        PregnancyCalculator.calculateStartDate(
+      week: week,
+      day: day,
+    );
+
+    final inserted = await _client
+        .from('user_pregnancy_profiles')
+        .upsert({
+          'user_id': userId,
+          'pregnancy_start_date':
+              startDate.toIso8601String(),
+          'is_active': true,
+        })
+        .select()
+        .single();
+
+    state = state.copyWith(
+      profile: PregnancyEntity.fromJson(inserted),
+    );
   }
+}
 }

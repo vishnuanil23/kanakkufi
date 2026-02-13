@@ -1,3 +1,5 @@
+import 'expense_entity.dart';
+
 abstract class ExpenseRepository {
-  // TODO: Define repository contract
+  Future<void> addExpense(ExpenseEntity expense);
 }

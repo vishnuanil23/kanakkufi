@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../category/domain/category_entity.dart';
+import 'expense_viewmodel.dart';
 import 'widgets/amount_input_card.dart';
 import 'widgets/amount_summary_card.dart';
 import 'widgets/date_picker_card.dart';
-import 'widgets/expense_card.dart';
+import 'widgets/expense_category_grid.dart';
 import 'widgets/expense_section_header.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
@@ -23,20 +24,12 @@ class _AddExpenseScreenState
     extends ConsumerState<AddExpenseScreen> {
   final TextEditingController _amountController =
       TextEditingController();
+  final TextEditingController _noteController =
+      TextEditingController();
 
   String _selectedCategory = "Doctor";
+  String _selectedCurrency = "INR";
   DateTime _selectedDate = DateTime.now();
-
-  final List<String> _categories = [
-    "Doctor",
-    "Pharmacy",
-    "Scan",
-    "Baby Care",
-    "Hospital",
-    "Nutrition",
-    "Travel",
-    "Other",
-  ];
 
   double get _amount =>
       double.tryParse(_amountController.text) ?? 0;
@@ -44,6 +37,7 @@ class _AddExpenseScreenState
   @override
   Widget build(BuildContext context) {
     final formatter = NumberFormat("#,##0.00", "en_IN");
+    final expenseVM = ref.watch(addExpenseProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -66,7 +60,11 @@ class _AddExpenseScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AmountSummaryCard(
-              displayAmount: formatter.format(_amount),
+              displayAmount:
+                  _selectedCurrency == "AED" &&
+                          expenseVM.convertedAmount != null
+                      ? formatter.format(expenseVM.convertedAmount)
+                      : formatter.format(_amount),
               category: _selectedCategory,
             ),
             const SizedBox(height: 28),
@@ -77,8 +75,12 @@ class _AddExpenseScreenState
             const ExpenseSectionHeader(text: "Date"),
             const SizedBox(height: 12),
             _buildDateAmountRow(),
+            const SizedBox(height: 20),
+            const ExpenseSectionHeader(text: "Note"),
+            const SizedBox(height: 12),
+            _buildNoteField(),
             const SizedBox(height: 40),
-            _buildSubmitButton(),
+            _buildSubmitButton(expenseVM),
           ],
         ),
       ),
@@ -86,72 +88,14 @@ class _AddExpenseScreenState
   }
 
   Widget _buildCategoryGrid() {
-    return ExpenseCard(
-      padding: const EdgeInsets.all(12),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: _categories.length,
-        gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.05,
-        ),
-        itemBuilder: (context, index) {
-          final category = _categories[index];
-          final isSelected =
-              _selectedCategory == category;
-
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedCategory = category;
-              });
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.background,
-                borderRadius:
-                    BorderRadius.circular(14),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withAlpha(90),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ]
-                    : const [
-                        BoxShadow(
-                          color: AppColors.shadow,
-                          blurRadius: 12,
-                          offset: Offset(0, 6),
-                        ),
-                      ],
-              ),
-              child: Center(
-                child: Text(
-                  category,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    color: isSelected
-                        ? Colors.white
-                        : AppColors.text,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+    return ExpenseCategoryGrid(
+      categories: expenseCategories,
+      selectedCategory: _selectedCategory,
+      onSelected: (value) {
+        setState(() {
+          _selectedCategory = value;
+        });
+      },
     );
   }
 
@@ -176,6 +120,12 @@ class _AddExpenseScreenState
                 setState(() {
                   _selectedDate = picked;
                 });
+                if (_selectedCurrency == "AED") {
+                  ref.read(addExpenseProvider).onAmountOrDateChanged(
+                        amount: _amount,
+                        date: _selectedDate,
+                      );
+                }
               }
             },
           ),
@@ -184,20 +134,42 @@ class _AddExpenseScreenState
         Expanded(
           child: AmountInputCard(
             controller: _amountController,
-            onChanged: (_) => setState(() {}),
+            selectedCurrency: _selectedCurrency,
+            onCurrencyChanged: (value) {
+              setState(() {
+                _selectedCurrency = value;
+              });
+              if (_selectedCurrency == "AED") {
+                if (_selectedCurrency == "AED") {
+                  ref.read(addExpenseProvider).onAmountOrDateChanged(
+                        amount: _amount,
+                        date: _selectedDate,
+                      );
+                }
+              }
+            },
+            onChanged: (_) {
+              setState(() {});
+              if (_selectedCurrency == "AED") {
+                ref.read(addExpenseProvider).onAmountOrDateChanged(
+                      amount: _amount,
+                      date: _selectedDate,
+                    );
+              }
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(AddExpenseViewModel expenseVM) {
     return SizedBox(
       width: double.infinity,
       height: 55,
       child: ElevatedButton(
         onPressed:
-            _amount > 0 ? _insertExpense : null,
+            _amount > 0 ? () => _insertExpense(expenseVM) : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           disabledBackgroundColor: AppColors.primary.withAlpha(120),
@@ -218,35 +190,61 @@ class _AddExpenseScreenState
     );
   }
 
-  Future<void> _insertExpense() async {
-    final client = Supabase.instance.client;
-    final userId =
-        client.auth.currentUser?.id;
+  Widget _buildNoteField() {
+    return TextField(
+      controller: _noteController,
+      maxLines: 3,
+      textInputAction: TextInputAction.newline,
+      decoration: InputDecoration(
+        hintText: "Add a note (optional)",
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+      ),
+      style: GoogleFonts.inter(
+        fontSize: 14,
+        color: AppColors.text,
+      ),
+    );
+  }
+
+  Future<void> _insertExpense(AddExpenseViewModel expenseVM) async {
+    final amountInr = expenseVM.convertedAmount;
+    final finalAmount =
+        _selectedCurrency == "AED" && amountInr != null
+            ? amountInr
+            : _amount;
+    final note = _noteController.text.trim();
 
     final payload = {
       "title": _selectedCategory,
-      "amount": _amount,
+      "amount": finalAmount,
       "date": _selectedDate,
+      "note": note.isEmpty ? null : note,
     };
 
     if (mounted) {
       Navigator.pop(context, payload);
     }
 
-    unawaited(_persistExpense(userId));
+    unawaited(
+      expenseVM.addExpense(
+        category: _selectedCategory,
+        amount: finalAmount,
+        date: _selectedDate,
+        note: note.isEmpty ? null : note,
+      ),
+    );
   }
 
-  Future<void> _persistExpense(String? userId) async {
-    try {
-      final client = Supabase.instance.client;
-      await client.from('expenses').insert({
-        'user_id': userId,
-        'amount': _amount,
-        'category': _selectedCategory,
-        'expense_date':
-            _selectedDate.toIso8601String(),
-      });
-    } catch (_) {}
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
   }
 
 }

@@ -50,9 +50,10 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
   }
 
   void changeViewType(String type) {
+    final normalizedType = type == 'Pregnancy' ? 'Trimester' : type;
     state = state.copyWith(
-      viewType: type,
-      selectedPeriod: type == 'Trimester' ? 'Trimester 1' : 'Week',
+      viewType: normalizedType,
+      selectedPeriod: normalizedType == 'Trimester' ? 'Trimester 1' : 'Week',
     );
   }
 

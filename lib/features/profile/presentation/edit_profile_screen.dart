@@ -137,65 +137,24 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
               ),
               const SizedBox(height: 12),
               SwitchListTile(
-                title: const Text("Enable Pregnancy Mode"),
-                value: pregnancyState.isEnabled,
-                onChanged: (value) async {
-                  if (value) {
-                    await showModalBottomSheet(
-                      context: context,
-                      builder: (_) {
-                        return Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TextField(
-                                controller: _weekController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: "Current Week",
-                                ),
-                              ),
-                              TextField(
-                                controller: _dayController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: "Current Day (0-6)",
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              ElevatedButton(
-                                onPressed: () async {
-                                  final week =
-                                      int.tryParse(_weekController.text);
-                                  final day =
-                                      int.tryParse(_dayController.text);
+  title: const Text("Enable Pregnancy Mode"),
+  value: pregnancyState.profile?.isActive ?? false,
+  onChanged: (value) async {
+    final hasData = pregnancyState.profile != null;
 
-                                  if (week == null || day == null) {
-                                    return;
-                                  }
-
-                                  await pregnancyVM.enablePregnancy(
-                                    week: week,
-                                    day: day,
-                                  );
-
-                                  if (context.mounted) {
-                                    Navigator.pop(context);
-                                  }
-                                },
-                                child: const Text("Save"),
-                              )
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  } else {
-                    await pregnancyVM.disablePregnancy();
-                  }
-                },
-              ),
+    if (value) {
+      if (hasData) {
+        // Just enable without asking week/day
+        await pregnancyVM.togglePregnancy();
+      } else {
+        // First time → ask week/day
+        await _showPregnancyInputSheet(context, pregnancyVM);
+      }
+    } else {
+      await pregnancyVM.togglePregnancy();
+    }
+  },
+),
               const SizedBox(height: 20),
               if (state.error != null) ...[
                 Text(
@@ -229,4 +188,62 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
       ),
     );
   }
+  
+Future<void> _showPregnancyInputSheet(
+  BuildContext context,
+  PregnancyViewModel pregnancyVM,
+) async {
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) {
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: 20 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _weekController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Current Week",
+              ),
+            ),
+            TextField(
+              controller: _dayController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Current Day (0-6)",
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                final week = int.tryParse(_weekController.text);
+                final day = int.tryParse(_dayController.text);
+
+                if (week == null || day == null) return;
+
+                await pregnancyVM.togglePregnancy(
+                  week: week,
+                  day: day,
+                );
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text("Save"),
+            )
+          ],
+        ),
+      );
+    },
+  );
+}
 }
