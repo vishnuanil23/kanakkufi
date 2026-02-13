@@ -30,7 +30,7 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
   void changeViewType(String type) {
     state = state.copyWith(
       viewType: type,
-      selectedPeriod: type == 'Trimester' ? 'Trimester 1' : 'Day',
+      selectedPeriod: type == 'Trimester' ? 'Trimester 1' : 'Week',
     );
   }
 

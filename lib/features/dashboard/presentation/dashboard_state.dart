@@ -5,7 +5,7 @@ class DashboardState {
   final double totalExpenses;
 
   const DashboardState({
-    this.selectedPeriod = 'Day',
+    this.selectedPeriod = 'Week',
     this.viewType = 'Monthly',
     this.expenses = const [],
     this.totalExpenses = 0.0,

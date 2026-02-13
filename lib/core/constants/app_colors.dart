@@ -19,6 +19,16 @@ class AppColors {
   static const Color text = Color(0xFF0F172A);
   static const Color textSecondary = Color(0xFF64748B);
 
+  // Primary Variations for Gradients
+  static const Color navyDeep = Color(0xFF0F1E33);
+  static const Color navyMid = Color(0xFF1A3B5D);
+  static const Color sage = Color(0xFF4B8673);
+
+  // Gold Variations for Metallic look
+  static const Color goldLight = Color(0xFFF0D49D);
+  static const Color goldBright = Color(0xFFE5B567);
+  static const Color goldDark = Color(0xFFA67C37);
+
   // Status Colors
   static const Color error = Color(0xFFEF4444);
   static const Color success = Color(0xFF22C55E);

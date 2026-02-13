@@ -72,7 +72,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              "Hello, Vishnu",
+              "Vishnu",
               style: GoogleFonts.inter(
                 fontSize: 28,
                 color: AppColors.text,
@@ -114,166 +114,191 @@ class DashboardScreen extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      height: 220,
+      height: 230,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.mint],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 20,
-            offset: Offset(0, 10),
+            color: AppColors.navyDeep.withAlpha(80),
+            blurRadius: 40,
+            offset: const Offset(0, 20),
           ),
         ],
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.navyDeep, AppColors.navyMid, AppColors.sage],
+        ),
       ),
-      child: Stack(
-        children: [
-          // Mesh effect simulation
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.mint.withAlpha(50),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(40),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    Text(
-                      "KanakkuFi Premium",
-                      style: GoogleFonts.inter(
-                        color: Colors.white.withAlpha(200),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Icon(
-                      Icons.more_horiz_rounded,
-                      color: Colors.white.withAlpha(150),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    color: Colors.white.withAlpha(150),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: Stack(
+          children: [
+            // The "Glow" Layer
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0.7, -0.6),
+                    radius: 1.2,
+                    colors: [
+                      AppColors.mint.withAlpha(80), // ~30-40% opacity
+                      Colors.transparent,
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      "₹ ",
-                      style: GoogleFonts.inter(
-                        color: AppColors.accent,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(40),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
-                    ),
-                    Text(
-                      displayAmount.toStringAsFixed(2),
-                      style: GoogleFonts.inter(
-                        color: AppColors.accent,
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "SPENDING LIMIT",
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withAlpha(100),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Stack(
-                            children: [
-                              Container(
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(30),
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                              Container(
-                                height: 4,
-                                width: 100,
-                                decoration: BoxDecoration(
-                                  color: AppColors.accent,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(30),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        "Tier 1 Elite",
+                      Text(
+                        "KanakkuFi Premium",
                         style: GoogleFonts.inter(
-                          color: Colors.white.withAlpha(150),
-                          fontSize: 11,
+                          color: Colors.white.withAlpha(200),
+                          fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    label,
+                    style: GoogleFonts.inter(
+                      color: Colors.white.withAlpha(150),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Three-Tone Metallic Gold Gradient for Currency
+                      ShaderMask(
+                        blendMode: BlendMode.srcIn,
+                        shaderCallback:
+                            (bounds) => const LinearGradient(
+                              colors: [
+                                AppColors.goldLight,
+                                AppColors.goldBright,
+                                AppColors.goldDark,
+                              ],
+                              stops: [0.0, 0.5, 1.0],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ).createShader(
+                              Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                            ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              "₹ ",
+                              style: GoogleFonts.inter(
+                                color: Colors.white, // Mask color
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            Text(
+                              displayAmount.toStringAsFixed(2),
+                              style: GoogleFonts.inter(
+                                color: Colors.white, // Mask color
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "SPENDING LIMIT",
+                              style: GoogleFonts.inter(
+                                color: Colors.white.withAlpha(100),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Stack(
+                              children: [
+                                Container(
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(30),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                Container(
+                                  height: 4,
+                                  width: 100,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accent,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(30),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          "Tier 1 Elite",
+                          style: GoogleFonts.inter(
+                            color: Colors.white.withAlpha(150),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -309,26 +334,27 @@ class DashboardScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: const [
           BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 20,
-            offset: Offset(0, 10),
+            color: Color(0x0A000000), // rgba(0, 0, 0, 0.04)
+            blurRadius: 40,
+            offset: Offset(0, 15),
           ),
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.goldLight.withAlpha(50), // Soft Gold
+              shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.lightbulb_outline_rounded,
-              color: AppColors.accent,
+              color: AppColors.goldDark, // Deep Bronze
               size: 24,
             ),
           ),
@@ -338,27 +364,24 @@ class DashboardScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Smart Tip",
+                  "Spending Wisdom",
                   style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: AppColors.accent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.navyDeep, // Deep Navy
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
-                  "Small daily savings of ₹50 can grow to ₹1.5k this month!",
+                  "Your spending on entertainment is 15% higher than last month. Consider a small adjustment.",
                   style: GoogleFonts.inter(
-                    color: AppColors.textSecondary,
+                    color: Colors.black.withAlpha(128), // 0.5 opacity
                     fontSize: 13,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
-          ),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.textSecondary.withAlpha(100),
           ),
         ],
       ),
@@ -376,7 +399,7 @@ class DashboardScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              "All Statistic",
+              "All Statistics",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -397,7 +420,6 @@ class DashboardScreen extends ConsumerWidget {
                     _buildPeriodTab('Trimester 3', state, viewModel),
                   ]
                   : [
-                    _buildPeriodTab('Day', state, viewModel),
                     _buildPeriodTab('Week', state, viewModel),
                     _buildPeriodTab('Month', state, viewModel),
                     _buildPeriodTab('Year', state, viewModel),
@@ -471,14 +493,27 @@ class DashboardScreen extends ConsumerWidget {
                               } else {
                                 titles = ['Wk 28', 'Wk 32', 'Wk 36', 'Wk 40'];
                               }
-                            } else {
+                            } else if (state.selectedPeriod == 'Week') {
                               titles = [
-                                '09:00',
-                                '12:00',
-                                '15:00',
-                                '18:00',
-                                '21:00',
-                                '00:00',
+                                'Mon',
+                                'Tue',
+                                'Wed',
+                                'Thu',
+                                'Fri',
+                                'Sat',
+                                'Sun',
+                              ];
+                            } else if (state.selectedPeriod == 'Month') {
+                              titles = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
+                            } else {
+                              // Year
+                              titles = [
+                                'Jan',
+                                'Mar',
+                                'May',
+                                'Jul',
+                                'Sep',
+                                'Nov',
                               ];
                             }
 
@@ -544,13 +579,30 @@ class DashboardScreen extends ConsumerWidget {
                                       FlSpot(2, 3.5),
                                       FlSpot(3, 3.0),
                                     ])
-                                : const [
+                                : state.selectedPeriod == 'Week'
+                                ? const [
                                   FlSpot(0, 1.2),
                                   FlSpot(1, 1.8),
                                   FlSpot(2, 1.4),
                                   FlSpot(3, 2.5),
-                                  FlSpot(4, 2.0),
+                                  FlSpot(4, 2.1),
                                   FlSpot(5, 2.8),
+                                  FlSpot(6, 2.4),
+                                ]
+                                : state.selectedPeriod == 'Month'
+                                ? const [
+                                  FlSpot(0, 2.0),
+                                  FlSpot(1, 1.5),
+                                  FlSpot(2, 2.8),
+                                  FlSpot(3, 3.2),
+                                ]
+                                : const [
+                                  FlSpot(0, 1.0),
+                                  FlSpot(1, 2.2),
+                                  FlSpot(2, 1.8),
+                                  FlSpot(3, 3.5),
+                                  FlSpot(4, 2.9),
+                                  FlSpot(5, 4.0),
                                 ],
                         isCurved: true,
                         curveSmoothness: 0.35,
