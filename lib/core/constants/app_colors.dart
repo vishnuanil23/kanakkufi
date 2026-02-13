@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Background
-  static const Color background = Color(0xFFFBFBFE); // Very Light Blue/Grey
+  static const Color background = Color(
+    0xFFF7F3F0,
+  ); // Warm, off-white background
 
-  // Primary (Modern Indigo)
-  static const Color primary = Color(0xFF6366F1);
+  // Primary (Midnight Navy)
+  static const Color primary = Color(0xFF1A2B48);
 
-  // Accent (Emerald Mint)
-  static const Color accent = Color(0xFF10B981);
+  // Accent (Gold)
+  static const Color accent = Color(0xFFC9A061);
+
+  // Soft Mint
+  static const Color mint = Color(0xFFA8D5BA);
 
   // Text
-  static const Color text = Color(0xFF1E293B);
+  static const Color text = Color(0xFF0F172A);
   static const Color textSecondary = Color(0xFF64748B);
 
   // Status Colors
@@ -21,6 +26,9 @@ class AppColors {
 
   // Others
   static const Color border = Color(0xFFE2E8F0);
-  static const Color cardBg = Colors.white;
-  static const Color white = Colors.white;
+  static const Color cardBg = Color(0xFFFFFFFF);
+  static const Color white = Color(0xFFFFFFFF);
+
+  // Elevation
+  static const Color shadow = Color(0x0D000000); // 5% opacity black
 }

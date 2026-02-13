@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import 'auth_viewmodel.dart';
@@ -178,8 +179,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.primary.withAlpha(20),
+            color: AppColors.white,
             borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.account_balance_wallet_rounded,
@@ -188,9 +196,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
+        Text(
           "Let's Get Started",
-          style: TextStyle(
+          style: GoogleFonts.inter(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             color: AppColors.text,
@@ -198,9 +206,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           "Enter your details to manage your Kanakku efficiently.",
-          style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            color: AppColors.textSecondary,
+          ),
         ),
       ],
     );
@@ -211,20 +222,29 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       height: 50,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border.withAlpha(100)),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(16),
           color: AppColors.primary,
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         indicatorPadding: const EdgeInsets.all(4),
         labelColor: Colors.white,
         unselectedLabelColor: AppColors.textSecondary,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        labelStyle: GoogleFonts.inter(
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
         tabs: const [Tab(text: "Phone Number"), Tab(text: "Email Address")],
       ),
     );
@@ -259,10 +279,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       children: [
         Text(
           isPhone ? "Mobile Number" : "Email Address",
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: AppColors.text,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+            letterSpacing: 0.5,
           ),
         ),
         const SizedBox(height: 12),
@@ -378,24 +399,27 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       prefixIcon: Icon(icon, color: AppColors.primary.withAlpha(150), size: 20),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+      contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide(color: AppColors.border.withAlpha(100)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
-      hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
+      hintStyle: GoogleFonts.inter(
+        color: AppColors.textSecondary,
+        fontSize: 15,
+      ),
     );
   }
 
@@ -469,10 +493,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(12),
             ),
-            elevation: 4,
-            shadowColor: AppColors.primary.withAlpha(80),
+            elevation: 0,
             disabledBackgroundColor: AppColors.primary.withAlpha(150),
           ),
           child:

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import 'dashboard_viewmodel.dart';
 import 'dashboard_state.dart';
@@ -57,21 +58,23 @@ class DashboardScreen extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Hello, Vishnu",
-              style: TextStyle(
-                fontSize: 16,
+              "WELCOME BACK",
+              style: GoogleFonts.inter(
+                fontSize: 12,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
+                letterSpacing: 1.2,
               ),
             ),
+            const SizedBox(height: 4),
             Text(
-              "Your Kanakku Today",
-              style: TextStyle(
-                fontSize: 22,
+              "Hello, Vishnu",
+              style: GoogleFonts.inter(
+                fontSize: 28,
                 color: AppColors.text,
                 fontWeight: FontWeight.bold,
               ),
@@ -79,15 +82,22 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 20,
+                offset: Offset(0, 10),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.notifications_none_rounded,
             color: AppColors.text,
+            size: 24,
           ),
         ),
       ],
@@ -104,120 +114,166 @@ class DashboardScreen extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      height: 200,
+      height: 220,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppColors.primary, Color(0xFF818CF8)],
+          colors: [AppColors.primary, AppColors.mint],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: AppColors.primary.withAlpha(80),
+            color: AppColors.shadow,
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: Offset(0, 10),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: CustomPaint(painter: CardBackgroundPainter()),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      Text(
-                        "KanakkuFi",
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(200),
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
-                    transitionBuilder: (
-                      Widget child,
-                      Animation<double> animation,
-                    ) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0.0, 0.2),
-                            end: Offset.zero,
-                          ).animate(
-                            CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeOutCubic,
-                            ),
-                          ),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Column(
-                      key: ValueKey<String>(
-                        state.viewType + state.selectedPeriod,
-                      ),
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          label,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            const Text(
-                              "₹ ",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              displayAmount.toStringAsFixed(2),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+      child: Stack(
+        children: [
+          // Mesh effect simulation
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.mint.withAlpha(50),
               ),
             ),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(40),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    Text(
+                      "KanakkuFi Premium",
+                      style: GoogleFonts.inter(
+                        color: Colors.white.withAlpha(200),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Icon(
+                      Icons.more_horiz_rounded,
+                      color: Colors.white.withAlpha(150),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    color: Colors.white.withAlpha(150),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      "₹ ",
+                      style: GoogleFonts.inter(
+                        color: AppColors.accent,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      displayAmount.toStringAsFixed(2),
+                      style: GoogleFonts.inter(
+                        color: AppColors.accent,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "SPENDING LIMIT",
+                            style: GoogleFonts.inter(
+                              color: Colors.white.withAlpha(100),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Stack(
+                            children: [
+                              Container(
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withAlpha(30),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              Container(
+                                height: 4,
+                                width: 100,
+                                decoration: BoxDecoration(
+                                  color: AppColors.accent,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(30),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "Tier 1 Elite",
+                        style: GoogleFonts.inter(
+                          color: Colors.white.withAlpha(150),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -228,19 +284,19 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: GoogleFonts.inter(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
             color: AppColors.text,
           ),
         ),
         TextButton(
           onPressed: () {},
-          child: const Text(
+          child: Text(
             "See All",
-            style: TextStyle(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
+            style: GoogleFonts.inter(
+              color: AppColors.accent,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -250,48 +306,59 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildHookCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.accent.withAlpha(30),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.accent.withAlpha(50)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.accent.withAlpha(50),
-              shape: BoxShape.circle,
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
               Icons.lightbulb_outline_rounded,
               color: AppColors.accent,
-              size: 20,
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   "Smart Tip",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
                     fontSize: 14,
-                    color: AppColors.text,
+                    color: AppColors.accent,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   "Small daily savings of ₹50 can grow to ₹1.5k this month!",
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     color: AppColors.textSecondary,
                     fontSize: 13,
                   ),
                 ),
               ],
             ),
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: AppColors.textSecondary.withAlpha(100),
           ),
         ],
       ),
@@ -590,24 +657,14 @@ class DashboardScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
+          color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          boxShadow:
-              isSelected
-                  ? [
-                    BoxShadow(
-                      color: AppColors.primary.withAlpha(50),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                  : null,
         ),
         child: Text(
           period,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.inter(
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
       ),
@@ -619,22 +676,28 @@ class DashboardScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withAlpha(100)),
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
               Icons.receipt_long_rounded,
               color: AppColors.accent,
-              size: 20,
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -644,7 +707,7 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 Text(
                   item["title"].toString(),
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                     color: AppColors.text,
@@ -652,7 +715,7 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 Text(
                   item["date"].toString(),
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -662,7 +725,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
           Text(
             "₹ ${item["amount"]}",
-            style: const TextStyle(
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               color: AppColors.text,
@@ -672,57 +735,4 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-class CardBackgroundPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = Colors.white.withAlpha(20)
-          ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(0, size.height * 0.7);
-    path.quadraticBezierTo(
-      size.width * 0.25,
-      size.height * 0.6,
-      size.width * 0.5,
-      size.height * 0.75,
-    );
-    path.quadraticBezierTo(
-      size.width * 0.75,
-      size.height * 0.9,
-      size.width,
-      size.height * 0.8,
-    );
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
-
-    final path2 = Path();
-    path2.moveTo(0, size.height * 0.9);
-    path2.quadraticBezierTo(
-      size.width * 0.3,
-      size.height * 0.85,
-      size.width * 0.6,
-      size.height * 0.95,
-    );
-    path2.quadraticBezierTo(
-      size.width * 0.8,
-      size.height,
-      size.width,
-      size.height * 0.9,
-    );
-    path2.lineTo(size.width, size.height);
-    path2.lineTo(0, size.height);
-    path2.close();
-
-    canvas.drawPath(path2, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
