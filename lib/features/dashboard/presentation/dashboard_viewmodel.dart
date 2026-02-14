@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/supabase_client_provider.dart';
 import 'dashboard_state.dart';
 import '../../pregnancy/presentation/pregnancy_viewmodel.dart';
+import '../../pregnancy/domain/pregnancy_chart_utils.dart';
 import '../../../core/constants/app_strings.dart';
 
 final dashboardProvider =
@@ -71,12 +72,47 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
           };
         }).toList();
 
+    final viewData = _calculateViewData(expenses);
+    state = state.copyWith(
+      expenses: expenses,
+      totalExpenses: viewData.total,
+      displayTotal: viewData.displayTotal,
+      totalLabel: viewData.label,
+    );
+  }
+
+  ({double total, double displayTotal, String label}) _calculateViewData(
+    List<Map<String, dynamic>> expenses,
+  ) {
     final total = expenses.fold<double>(
       0.0,
       (sum, e) => sum + (e["amount"] as num),
     );
 
-    state = state.copyWith(expenses: expenses, totalExpenses: total);
+    double displayTotal = total;
+    String label = "Total Monthly Spend";
+
+    if (state.viewType == AppStrings.viewTrimester) {
+      final pregnancyState = ref.read(pregnancyProvider);
+      if (pregnancyState.profile != null && pregnancyState.profile!.isActive) {
+        displayTotal = PregnancyChartUtils.calculateTotal(
+          expenses: expenses,
+          period: state.selectedPeriod,
+          startDate: pregnancyState.profile!.startDate,
+        );
+      }
+      label = "Total ${state.selectedPeriod} Spend";
+    } else if (state.selectedPeriod == AppStrings.viewYear) {
+      label = "Total Yearly Spend";
+    } else if (state.selectedPeriod == AppStrings.viewWeek) {
+      // Keep Monthly label or change? Existing logic was: "Total Monthly Spend" for everything else.
+      // But let's check DashboardScreen logic:
+      // state.selectedPeriod == AppStrings.viewYear ? "Toal Yearly Spend" : "Total Monthly Spend"
+      // So for Week it was "Total Monthly Spend".
+      label = "Total Monthly Spend";
+    }
+
+    return (total: total, displayTotal: displayTotal, label: label);
   }
 
   void changeViewType(String type) {
@@ -110,11 +146,13 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
     };
 
     final updatedExpenses = [item, ...state.expenses];
-    final updatedTotal = state.totalExpenses + amount;
+    final viewData = _calculateViewData(updatedExpenses);
 
     state = state.copyWith(
       expenses: updatedExpenses,
-      totalExpenses: updatedTotal,
+      totalExpenses: viewData.total,
+      displayTotal: viewData.displayTotal,
+      totalLabel: viewData.label,
     );
   }
 

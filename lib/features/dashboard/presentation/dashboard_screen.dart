@@ -11,7 +11,7 @@ import '../../pregnancy/domain/pregnancy_calculator.dart';
 import '../../pregnancy/presentation/pregnancy_viewmodel.dart';
 import 'widgets/dashboard_header.dart';
 import 'widgets/dashboard_total_balance_card.dart';
-import '../../pregnancy/domain/pregnancy_chart_utils.dart';
+
 import 'widgets/dashboard_section_header.dart';
 import 'widgets/dashboard_hook_card.dart';
 import 'widgets/transaction_item.dart';
@@ -40,20 +40,8 @@ class DashboardScreen extends ConsumerWidget {
                 "Trimester ${PregnancyCalculator.calculateTrimester(PregnancyCalculator.calculateWeek(pregnancy.startDate))}"
             : null;
 
-    final displayAmount =
-        (state.viewType == AppStrings.viewTrimester && pregnancy != null)
-            ? PregnancyChartUtils.calculateTotal(
-              expenses: state.expenses,
-              period: state.selectedPeriod,
-              startDate: pregnancy.startDate,
-            )
-            : state.totalExpenses;
-    final totalLabel =
-        state.viewType == AppStrings.viewTrimester
-            ? "Total ${state.selectedPeriod} Spend"
-            : state.selectedPeriod == AppStrings.viewYear
-            ? "Total Yearly Spend"
-            : "Total Monthly Spend";
+    final displayAmount = state.displayTotal;
+    final totalLabel = state.totalLabel;
 
     ref.listen(pregnancyProvider, (prev, next) {
       if (!next.isEnabled) {
