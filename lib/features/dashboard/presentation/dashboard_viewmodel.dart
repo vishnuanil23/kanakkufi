@@ -42,8 +42,13 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
         startRange = DateTime(now.year, 1, 1);
       }
     } else {
-      // Standard view: Current Month
-      startRange = DateTime(now.year, now.month, 1);
+      // Standard view: Handle differently based on period
+      if (state.selectedPeriod == AppStrings.viewYear) {
+        startRange = DateTime(now.year, 1, 1);
+      } else {
+        // Default to current month for Month/Week initially
+        startRange = DateTime(now.year, now.month, 1);
+      }
     }
 
     final data = await _client
@@ -89,6 +94,7 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
 
   void changePeriod(String period) {
     state = state.copyWith(selectedPeriod: period);
+    fetchExpenses();
   }
 
   void addExpense({

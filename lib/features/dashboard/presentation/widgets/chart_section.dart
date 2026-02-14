@@ -97,6 +97,13 @@ class ChartSection extends StatelessWidget {
                                 AppStrings.wk25,
                                 AppStrings.wk27,
                               ];
+                            } else if (state.selectedPeriod ==
+                                AppStrings.periodPregnancyAll) {
+                              titles = [
+                                AppStrings.axisT1,
+                                AppStrings.axisT2,
+                                AppStrings.axisT3,
+                              ];
                             } else {
                               titles = [
                                 AppStrings.wk29,

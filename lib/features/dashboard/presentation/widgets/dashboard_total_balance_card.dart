@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class DashboardTotalBalanceCard extends StatelessWidget {
@@ -42,10 +43,7 @@ class DashboardTotalBalanceCard extends StatelessWidget {
                   gradient: RadialGradient(
                     center: const Alignment(0.7, -0.6),
                     radius: 1.2,
-                    colors: [
-                      AppColors.mint.withAlpha(80),
-                      Colors.transparent,
-                    ],
+                    colors: [AppColors.mint.withAlpha(80), Colors.transparent],
                   ),
                 ),
               ),
@@ -95,18 +93,19 @@ class DashboardTotalBalanceCard extends StatelessWidget {
                     children: [
                       ShaderMask(
                         blendMode: BlendMode.srcIn,
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [
-                            AppColors.goldLight,
-                            AppColors.goldBright,
-                            AppColors.goldDark,
-                          ],
-                          stops: [0.0, 0.5, 1.0],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ).createShader(
-                          Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-                        ),
+                        shaderCallback:
+                            (bounds) => const LinearGradient(
+                              colors: [
+                                AppColors.goldLight,
+                                AppColors.goldBright,
+                                AppColors.goldDark,
+                              ],
+                              stops: [0.0, 0.5, 1.0],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ).createShader(
+                              Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                            ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -120,7 +119,10 @@ class DashboardTotalBalanceCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              total.toStringAsFixed(2),
+                              NumberFormat.currency(
+                                locale: 'en_IN',
+                                symbol: '',
+                              ).format(total),
                               style: GoogleFonts.inter(
                                 color: Colors.white,
                                 fontSize: 36,
