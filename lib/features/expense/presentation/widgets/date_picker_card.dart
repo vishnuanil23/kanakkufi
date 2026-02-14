@@ -30,9 +30,8 @@ class _DatePickerBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ExpenseCard(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
             Icons.calendar_today_rounded,
@@ -40,15 +39,16 @@ class _DatePickerBody extends StatelessWidget {
             color: AppColors.text,
           ),
           const SizedBox(width: 10),
-          Text(
-            formattedDate,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.text,
+          Expanded(
+            child: Text(
+              formattedDate,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.text,
+              ),
             ),
           ),
-          const SizedBox(width: 8),
           const Icon(
             Icons.expand_more_rounded,
             size: 20,

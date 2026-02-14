@@ -4,14 +4,13 @@ import '../../../../core/constants/app_colors.dart';
 class ExpenseCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final Color? borderColor;
 
   const ExpenseCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.symmetric(
-      vertical: 12,
-      horizontal: 16,
-    ),
+    this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+    this.borderColor,
   });
 
   @override
@@ -20,7 +19,11 @@ class ExpenseCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        border:
+            borderColor != null
+                ? Border.all(color: borderColor!, width: 2)
+                : null,
         boxShadow: const [
           BoxShadow(
             color: AppColors.shadow,

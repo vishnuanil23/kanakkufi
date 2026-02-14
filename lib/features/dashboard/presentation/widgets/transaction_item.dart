@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../category/domain/category_entity.dart';
 
 class TransactionItem extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -10,6 +11,8 @@ class TransactionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final category = getCategoryByName(item["title"].toString());
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -32,11 +35,7 @@ class TransactionItem extends StatelessWidget {
               color: AppColors.background,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
-              Icons.receipt_long_rounded,
-              color: AppColors.accent,
-              size: 24,
-            ),
+            child: Icon(category.icon, color: AppColors.accent, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
