@@ -69,6 +69,7 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
             "amount": (item[AppStrings.colAmount] as num).toDouble(),
             "date": DateFormat("dd MMM").format(dateTime),
             "dateTime": dateTime,
+            "note": item[AppStrings.colNote],
           };
         }).toList();
 
@@ -137,12 +138,14 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
     required String title,
     required double amount,
     required DateTime date,
+    String? note,
   }) {
     final item = {
       "title": title,
       "amount": amount,
       "date": DateFormat("dd MMM").format(date),
       "dateTime": date,
+      "note": note,
     };
 
     final updatedExpenses = [item, ...state.expenses];

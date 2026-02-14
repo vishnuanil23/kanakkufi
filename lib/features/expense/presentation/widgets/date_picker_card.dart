@@ -23,20 +23,14 @@ class DatePickerCard extends StatelessWidget {
 }
 
 class _DatePickerBody extends StatelessWidget {
-  const _DatePickerBody({
-    super.key,
-    required this.formattedDate,
-  });
+  const _DatePickerBody({required this.formattedDate});
 
   final String formattedDate;
 
   @override
   Widget build(BuildContext context) {
     return ExpenseCard(
-      padding: const EdgeInsets.symmetric(
-        vertical: 12,
-        horizontal: 16,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

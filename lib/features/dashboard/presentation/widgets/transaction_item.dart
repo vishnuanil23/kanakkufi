@@ -51,11 +51,26 @@ class TransactionItem extends StatelessWidget {
                     color: AppColors.text,
                   ),
                 ),
+                if (item["note"] != null && item["note"].toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      item["note"].toString(),
+                      style: GoogleFonts.inter(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                const SizedBox(height: 2),
                 Text(
                   item["date"].toString(),
                   style: GoogleFonts.inter(
                     color: AppColors.textSecondary,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ],

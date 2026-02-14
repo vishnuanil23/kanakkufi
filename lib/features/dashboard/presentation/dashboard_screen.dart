@@ -125,9 +125,15 @@ class DashboardScreen extends ConsumerWidget {
             final amount = result["amount"] as double?;
             final title = result["title"] as String?;
             final date = result["date"] as DateTime?;
+            final note = result["note"] as String?;
 
             if (amount != null && title != null && date != null) {
-              viewModel.addExpense(title: title, amount: amount, date: date);
+              viewModel.addExpense(
+                title: title,
+                amount: amount,
+                date: date,
+                note: note,
+              );
               if (context.mounted) {
                 ScaffoldMessenger.of(
                   context,
