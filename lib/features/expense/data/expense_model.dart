@@ -37,7 +37,7 @@ class ExpenseModel extends ExpenseEntity {
       'user_id': userId,
       'category': category,
       'amount': amount,
-      'expense_date': expenseDate.toIso8601String(),
+      'expense_date': expenseDate.toUtc().toIso8601String(),
       'note': note,
     };
   }

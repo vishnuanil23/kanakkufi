@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class TransactionItem extends StatelessWidget {
   final Map<String, dynamic> item;
 
-  const TransactionItem({
-    super.key,
-    required this.item,
-  });
+  const TransactionItem({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +62,7 @@ class TransactionItem extends StatelessWidget {
             ),
           ),
           Text(
-            "₹ ${item["amount"]}",
+            "₹ ${NumberFormat("#,##0.00", "en_IN").format(double.tryParse(item["amount"].toString()) ?? 0)}",
             style: GoogleFonts.inter(
               fontWeight: FontWeight.bold,
               fontSize: 16,

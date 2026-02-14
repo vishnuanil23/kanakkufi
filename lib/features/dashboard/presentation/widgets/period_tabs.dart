@@ -16,23 +16,27 @@ class PeriodTabs extends StatelessWidget {
     required this.showTrimesterTabs,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SizeTransition(
-            sizeFactor: animation,
-            axis: Axis.vertical,
-            child: child,
-          ),
-        );
-      },
-      child: showTrimesterTabs ? _buildTrimesterTabs() : _buildNormalTabs(),
-    );
-  }
+@override
+Widget build(BuildContext context) {
+  final isPregnancyActive = showTrimesterTabs;
+
+  return AnimatedSwitcher(
+    duration: const Duration(milliseconds: 400),
+    transitionBuilder: (child, animation) {
+      return FadeTransition(
+        opacity: animation,
+        child: SizeTransition(
+          sizeFactor: animation,
+          axis: Axis.vertical,
+          child: child,
+        ),
+      );
+    },
+    child: isPregnancyActive
+        ? _buildTrimesterTabs()
+        : _buildNormalTabs(),
+  );
+}
 
   Widget _buildNormalTabs() {
     return Row(
@@ -58,24 +62,35 @@ class PeriodTabs extends StatelessWidget {
     );
   }
 
-  Widget _buildPeriodTab(String period) {
-    final bool isSelected = state.selectedPeriod == period;
-    return GestureDetector(
-      onTap: () => viewModel.changePeriod(period),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          period,
-          style: GoogleFonts.inter(
-            color: isSelected ? Colors.white : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-          ),
+Widget _buildPeriodTab(String period) {
+  final bool isSelected = state.selectedPeriod == period;
+
+  return GestureDetector(
+    onTap: () {
+      if (!showTrimesterTabs &&
+          period.contains("Trimester")) {
+        return; // Safety guard
+      }
+
+      viewModel.changePeriod(period);
+    },
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        period,
+        style: GoogleFonts.inter(
+          color: isSelected
+              ? Colors.white
+              : AppColors.textSecondary,
+          fontWeight:
+              isSelected ? FontWeight.w600 : FontWeight.w400,
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

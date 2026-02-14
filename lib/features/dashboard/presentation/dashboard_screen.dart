@@ -15,7 +15,6 @@ import 'widgets/dashboard_hook_card.dart';
 import 'widgets/transaction_item.dart';
 import 'widgets/statistics_section.dart';
 import 'dashboard_viewmodel.dart';
-import 'dashboard_state.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -31,12 +30,14 @@ class DashboardScreen extends ConsumerWidget {
         profileState.profile?.fullName?.isNotEmpty == true
             ? profileState.profile!.fullName!
             : 'Hello';
-    final pregnancy = pregnancyState.profile;
-    final pregnancySummary =
-        pregnancy == null
-            ? null
-            : "Week ${PregnancyCalculator.calculateWeek(pregnancy.startDate)} • "
-              "Trimester ${PregnancyCalculator.calculateTrimester(PregnancyCalculator.calculateWeek(pregnancy.startDate))}";
+final pregnancy = pregnancyState.profile;
+
+final pregnancySummary =
+    (pregnancy != null && pregnancy.isActive)
+        ? "Week ${PregnancyCalculator.calculateWeek(pregnancy.startDate)} • "
+          "Trimester ${PregnancyCalculator.calculateTrimester(
+              PregnancyCalculator.calculateWeek(pregnancy.startDate))}"
+        : null;
 
     final displayAmount =
         state.viewType == 'Trimester' ? state.totalExpenses * 3.2 : state.totalExpenses;

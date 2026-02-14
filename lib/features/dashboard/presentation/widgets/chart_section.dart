@@ -2,6 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../domain/chart_utils.dart';
+import '../../../../core/constants/app_strings.dart';
+import '../../../pregnancy/domain/pregnancy_chart_utils.dart';
 import '../dashboard_state.dart';
 import '../../../pregnancy/presentation/pregnancy_state.dart';
 
@@ -73,32 +75,57 @@ class ChartSection extends StatelessWidget {
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
                           final List<String> titles;
-                          if (showTrimesterTabs && state.viewType == 'Trimester') {
-                            if (state.selectedPeriod == 'Trimester 1') {
-                              titles = ['Wk 1', 'Wk 4', 'Wk 8', 'Wk 12'];
-                            } else if (state.selectedPeriod == 'Trimester 2') {
+                          if (showTrimesterTabs &&
+                              state.viewType == AppStrings.viewTrimester) {
+                            if (state.selectedPeriod ==
+                                AppStrings.periodTrimester1) {
                               titles = [
-                                'Wk 13',
-                                'Wk 16',
-                                'Wk 20',
-                                'Wk 24',
-                                'Wk 27',
+                                AppStrings.wk2,
+                                AppStrings.wk4,
+                                AppStrings.wk6,
+                                AppStrings.wk8,
+                                AppStrings.wk10,
+                                AppStrings.wk12,
+                              ];
+                            } else if (state.selectedPeriod ==
+                                AppStrings.periodTrimester2) {
+                              titles = [
+                                AppStrings.wk14,
+                                AppStrings.wk17,
+                                AppStrings.wk20,
+                                AppStrings.wk22,
+                                AppStrings.wk25,
+                                AppStrings.wk27,
                               ];
                             } else {
-                              titles = ['Wk 28', 'Wk 32', 'Wk 36', 'Wk 40'];
+                              titles = [
+                                AppStrings.wk29,
+                                AppStrings.wk31,
+                                AppStrings.wk33,
+                                AppStrings.wk36,
+                                AppStrings.wk38,
+                                AppStrings.wk40,
+                              ];
                             }
-                          } else if (state.selectedPeriod == 'Week') {
+                          } else if (state.selectedPeriod ==
+                              AppStrings.viewWeek) {
                             titles = [
-                              'Mon',
-                              'Tue',
-                              'Wed',
-                              'Thu',
-                              'Fri',
-                              'Sat',
-                              'Sun',
+                              AppStrings.mon,
+                              AppStrings.tue,
+                              AppStrings.wed,
+                              AppStrings.thu,
+                              AppStrings.fri,
+                              AppStrings.sat,
+                              AppStrings.sun,
                             ];
-                          } else if (state.selectedPeriod == 'Month') {
-                            titles = ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'];
+                          } else if (state.selectedPeriod ==
+                              AppStrings.viewMonth) {
+                            titles = [
+                              AppStrings.wk1,
+                              AppStrings.wk2,
+                              AppStrings.wk3,
+                              AppStrings.wk4,
+                            ];
                           } else {
                             titles = ChartUtils.yearMonthLabels();
                           }
@@ -142,10 +169,13 @@ class ChartSection extends StatelessWidget {
                   ),
                   lineBarsData: [
                     LineChartBarData(
-                      spots: ChartUtils.buildChartSpots(
-                        state: state,
-                        pregnancyState: pregnancyState,
-                      ),
+                      spots:
+                          state.viewType == AppStrings.viewTrimester
+                              ? PregnancyChartUtils.buildChartSpots(
+                                state: state,
+                                pregnancyState: pregnancyState,
+                              )
+                              : ChartUtils.buildChartSpots(state: state),
                       isCurved: true,
                       curveSmoothness: 0.35,
                       color: AppColors.primary,
@@ -153,13 +183,14 @@ class ChartSection extends StatelessWidget {
                       isStrokeCapRound: true,
                       dotData: FlDotData(
                         show: true,
-                        getDotPainter: (spot, percent, barData, index) =>
-                            FlDotCirclePainter(
-                          radius: 4,
-                          color: Colors.white,
-                          strokeWidth: 2,
-                          strokeColor: AppColors.primary,
-                        ),
+                        getDotPainter:
+                            (spot, percent, barData, index) =>
+                                FlDotCirclePainter(
+                                  radius: 4,
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                  strokeColor: AppColors.primary,
+                                ),
                       ),
                       belowBarData: BarAreaData(
                         show: true,

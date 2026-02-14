@@ -19,12 +19,43 @@ It focuses on pregnancy-related expenses while being architected for expansion i
 
 ## Architecture
 
-Presentation → Domain → Data → Supabase
+KanakkuFi follows **Clean Architecture** with a **Feature-first** structure, ensuring high maintainability and testability.
 
-Key modules:
-- Auth and profile management
-- Expenses with currency conversion (AED to INR)
-- Dashboard with dynamic charts and pregnancy mode
+```
+Presentation (Widgets/ViewModels) → Domain (Entities/Interfaces) → Data (Models/Repos) → Supabase
+```
+
+### Folder Structure
+
+- `lib/core`: Shared infrastructure, themes, and application-wide configurations.
+- `lib/features`: Distinct business modules (e.g., `auth`, `expense`, `dashboard`).
+  - `presentation`: UI components and Riverpod ViewModels.
+  - `domain`: Business logic entities and repository abstractions.
+  - `data`: Data transfer objects (Models) and repository implementations.
+- `lib/shared`: Cross-feature UI components.
+
+---
+
+## 🛠️ Getting Started
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   ```
+
+2. **Environment Setup**:
+   - Copy `.env.example` to `.env`.
+   - Fill in your `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
+
+3. **Install Dependencies**:
+   ```bash
+   flutter pub get
+   ```
+
+4. **Run the App**:
+   ```bash
+   flutter run
+   ```
 
 ---
 

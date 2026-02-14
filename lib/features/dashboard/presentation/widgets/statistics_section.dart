@@ -22,38 +22,45 @@ class StatisticsSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "All Statistics",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.text,
-              ),
+Widget build(BuildContext context) {
+  final isPregActive =
+    pregnancyState.profile?.isActive ?? false;
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            "All Statistics",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppColors.text,
             ),
-            if (pregnancyState.isEnabled)
-              ViewTypeToggle(state: state, viewModel: viewModel),
-          ],
-        ),
-        const SizedBox(height: 16),
-        PeriodTabs(
-          state: state,
-          viewModel: viewModel,
-          showTrimesterTabs: showTrimesterTabs,
-        ),
-        const SizedBox(height: 24),
-        ChartSection(
-          state: state,
-          pregnancyState: pregnancyState,
-          showTrimesterTabs: showTrimesterTabs,
-        ),
-      ],
-    );
-  }
+          ),
+          if (isPregActive)
+            ViewTypeToggle(state: state, viewModel: viewModel),
+        ],
+      ),
+      const SizedBox(height: 16),
+
+      // Only allow trimester tabs if pregnancy is active
+      PeriodTabs(
+        state: state,
+        viewModel: viewModel,
+        showTrimesterTabs: isPregActive && showTrimesterTabs,
+      ),
+
+      const SizedBox(height: 24),
+
+      ChartSection(
+        state: state,
+        pregnancyState: pregnancyState,
+        showTrimesterTabs: isPregActive && showTrimesterTabs,
+      ),
+    ],
+  );
+}
 }
