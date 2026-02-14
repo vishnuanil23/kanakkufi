@@ -65,6 +65,7 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
           final dateTime =
               DateTime.parse(item[AppStrings.colExpenseDate]).toLocal();
           return {
+            "id": item[AppStrings.colId],
             "title": item[AppStrings.colCategory].toString(),
             "amount": (item[AppStrings.colAmount] as num).toDouble(),
             "date": DateFormat("dd MMM").format(dateTime),
@@ -106,10 +107,6 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
     } else if (state.selectedPeriod == AppStrings.viewYear) {
       label = "Total Yearly Spend";
     } else if (state.selectedPeriod == AppStrings.viewWeek) {
-      // Keep Monthly label or change? Existing logic was: "Total Monthly Spend" for everything else.
-      // But let's check DashboardScreen logic:
-      // state.selectedPeriod == AppStrings.viewYear ? "Toal Yearly Spend" : "Total Monthly Spend"
-      // So for Week it was "Total Monthly Spend".
       label = "Total Monthly Spend";
     }
 
@@ -134,21 +131,9 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
     fetchExpenses();
   }
 
-  void addExpense({
-    required String title,
-    required double amount,
-    required DateTime date,
-    String? note,
-  }) {
-    final item = {
-      "title": title,
-      "amount": amount,
-      "date": DateFormat("dd MMM").format(date),
-      "dateTime": date,
-      "note": note,
-    };
-
-    final updatedExpenses = [item, ...state.expenses];
+  Future<void> deleteExpense(dynamic id) async {
+    // Optimistic update
+    final updatedExpenses = state.expenses.where((e) => e["id"] != id).toList();
     final viewData = _calculateViewData(updatedExpenses);
 
     state = state.copyWith(
@@ -157,6 +142,111 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
       displayTotal: viewData.displayTotal,
       totalLabel: viewData.label,
     );
+
+    try {
+      await _client
+          .from(AppStrings.tableExpenses)
+          .delete()
+          .eq(AppStrings.colId, id);
+    } catch (e) {
+      // Revert on failure
+      fetchExpenses();
+    }
+  }
+
+  Future<void> updateExpense({
+    required dynamic id,
+    required String category,
+    required double amount,
+    required DateTime date,
+    String? note,
+  }) async {
+    // Optimistic update
+    final updatedExpenses =
+        state.expenses.map((e) {
+          if (e["id"] == id) {
+            return {
+              "id": id,
+              "title": category,
+              "amount": amount,
+              "date": DateFormat("dd MMM").format(date),
+              "dateTime": date,
+              "note": note,
+            };
+          }
+          return e;
+        }).toList();
+
+    final viewData = _calculateViewData(updatedExpenses);
+
+    state = state.copyWith(
+      expenses: updatedExpenses,
+      totalExpenses: viewData.total,
+      displayTotal: viewData.displayTotal,
+      totalLabel: viewData.label,
+    );
+
+    try {
+      await _client
+          .from(AppStrings.tableExpenses)
+          .update({
+            AppStrings.colCategory: category,
+            AppStrings.colAmount: amount,
+            AppStrings.colExpenseDate: date.toUtc().toIso8601String(),
+            AppStrings.colNote: note,
+          })
+          .eq(AppStrings.colId, id);
+    } catch (e) {
+      // Revert on failure
+      fetchExpenses();
+    }
+  }
+
+  Future<void> addExpense({
+    required String title,
+    required double amount,
+    required DateTime date,
+    String? note,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      final response =
+          await _client
+              .from(AppStrings.tableExpenses)
+              .insert({
+                AppStrings.colUserId: userId,
+                AppStrings.colCategory: title,
+                AppStrings.colAmount: amount,
+                AppStrings.colExpenseDate: date.toUtc().toIso8601String(),
+                AppStrings.colNote: note,
+              })
+              .select()
+              .single();
+
+      final item = {
+        "id": response[AppStrings.colId],
+        "title": title,
+        "amount": amount,
+        "date": DateFormat("dd MMM").format(date),
+        "dateTime": date,
+        "note": note,
+      };
+
+      final updatedExpenses = [item, ...state.expenses];
+      final viewData = _calculateViewData(updatedExpenses);
+
+      state = state.copyWith(
+        expenses: updatedExpenses,
+        totalExpenses: viewData.total,
+        displayTotal: viewData.displayTotal,
+        totalLabel: viewData.label,
+      );
+    } catch (e) {
+      // Refresh to be safe on error
+      fetchExpenses();
+    }
   }
 
   void resetToDefaultView() {

@@ -23,6 +23,7 @@ class AppStrings {
   static const String tableUserPregnancyProfiles = 'user_pregnancy_profiles';
 
   // Database Columns
+  static const String colId = 'id';
   static const String colUserId = 'user_id';
   static const String colAmount = 'amount';
   static const String colExpenseDate = 'expense_date';
