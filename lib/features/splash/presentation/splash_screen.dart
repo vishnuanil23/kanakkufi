@@ -139,7 +139,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
                 // Tagline
                 Text(
-                  'PREMIUM FINANCE',
+                  'FINANCE, ELEVATED',
                   style: GoogleFonts.inter(
                     color: Colors.white.withAlpha(128), // 0.5 opacity
                     fontSize: 12,
