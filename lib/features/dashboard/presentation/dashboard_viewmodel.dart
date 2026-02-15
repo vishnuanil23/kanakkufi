@@ -6,6 +6,9 @@ import 'dashboard_state.dart';
 import '../../pregnancy/presentation/pregnancy_viewmodel.dart';
 import '../../pregnancy/domain/pregnancy_chart_utils.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/enums/comparison_type.dart';
+import '../../../core/services/expense_comparison_service.dart';
+import '../../pregnancy/domain/pregnancy_calculator.dart';
 
 final dashboardProvider =
     StateNotifierProvider<DashboardViewModel, DashboardState>(
@@ -27,37 +30,36 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
 
     final now = DateTime.now();
     DateTime startRange;
-    DateTime endRange = DateTime(now.year, now.month + 1, 0, 23, 59, 59, 999);
 
-    // efficient data fetching based on view type
-    if (state.viewType == AppStrings.viewTrimester) {
-      // For pregnancy view, we need data from the start of pregnancy
-      // Access pregnancy state to get start date
-      final pregnancyState = ref.read(pregnancyProvider);
-      if (pregnancyState.profile != null && pregnancyState.profile!.isActive) {
-        startRange = pregnancyState.profile!.startDate;
-        // End range is today (or future if we allow future expenses, but usually today)
-        endRange = now;
-      } else {
-        // Fallback if no active pregnancy profile, just show current year or month
-        startRange = DateTime(now.year, 1, 1);
-      }
+    final pregnancyState = ref.read(pregnancyProvider);
+    final isPregnancyActive =
+        pregnancyState.profile != null && pregnancyState.profile!.isActive;
+
+    // Always fetch from at least the previous month for standard trends
+    final prevMonthStart = DateTime(now.year, now.month - 1, 1);
+
+    if (isPregnancyActive) {
+      // Fetch from earlier of: pregnancy start OR previous month start
+      final pStart = pregnancyState.profile!.startDate;
+      startRange = pStart.isBefore(prevMonthStart) ? pStart : prevMonthStart;
     } else {
-      // Standard view: Handle differently based on period
-      if (state.selectedPeriod == AppStrings.viewYear) {
-        startRange = DateTime(now.year, 1, 1);
-      } else {
-        // Default to current month for Month/Week initially
-        startRange = DateTime(now.year, now.month, 1);
-      }
+      startRange = prevMonthStart;
     }
+
+    final endRange = DateTime(now.year, now.month + 1, 0, 23, 59, 59, 999);
 
     final data = await _client
         .from(AppStrings.tableExpenses)
         .select()
         .eq(AppStrings.colUserId, userId)
-        .gte(AppStrings.colExpenseDate, startRange.toUtc().toIso8601String())
-        .lte(AppStrings.colExpenseDate, endRange.toUtc().toIso8601String())
+        .gte(
+          AppStrings.colExpenseDate,
+          DateFormat('yyyy-MM-dd').format(startRange),
+        )
+        .lte(
+          AppStrings.colExpenseDate,
+          DateFormat('yyyy-MM-dd').format(endRange),
+        )
         .order(AppStrings.colExpenseDate, ascending: false);
 
     final expenses =
@@ -74,19 +76,125 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
           };
         }).toList();
 
-    final viewData = _calculateViewData(expenses);
-    state = state.copyWith(
-      expenses: expenses,
-      totalExpenses: viewData.total,
-      displayTotal: viewData.displayTotal,
-      totalLabel: viewData.label,
+    _updateStateWithExpenses(expenses);
+  }
+
+  double get currentMonthTotal {
+    final now = DateTime.now();
+    return state.expenses
+        .where(
+          (e) =>
+              (e["dateTime"] as DateTime).month == now.month &&
+              (e["dateTime"] as DateTime).year == now.year,
+        )
+        .fold(0.0, (sum, e) => sum + (e["amount"] as num));
+  }
+
+  double get previousMonthTotal {
+    final now = DateTime.now();
+    final prev = DateTime(now.year, now.month - 1);
+    return state.expenses
+        .where(
+          (e) =>
+              (e["dateTime"] as DateTime).month == prev.month &&
+              (e["dateTime"] as DateTime).year == prev.year,
+        )
+        .fold(0.0, (sum, e) => sum + (e["amount"] as num));
+  }
+
+  double? get expenseComparisonPercent {
+    if (state.viewType == AppStrings.viewTrimester) {
+      return _trimesterComparison();
+    } else {
+      return _monthlyComparison();
+    }
+  }
+
+  ComparisonType get comparisonType {
+    return state.viewType == AppStrings.viewTrimester
+        ? ComparisonType.trimester
+        : ComparisonType.monthly;
+  }
+
+  double? _monthlyComparison() {
+    final prev = previousMonthTotal;
+    final current = currentMonthTotal;
+    if (prev == 0) return null;
+    return ExpenseComparisonService.calculatePercentageChange(
+      current: current,
+      previous: prev,
     );
+  }
+
+  double? _trimesterComparison() {
+    final pregnancyState = ref.read(pregnancyProvider);
+    if (pregnancyState.profile == null) return null;
+
+    final week = PregnancyCalculator.calculateWeek(
+      pregnancyState.profile!.startDate,
+    );
+    final currentTrimester = PregnancyCalculator.calculateTrimester(week);
+    final previousTrimester = currentTrimester - 1;
+
+    if (previousTrimester < 1) return null;
+
+    final current = _calculateTotalForTrimester(
+      currentTrimester,
+      pregnancyState.profile!.startDate,
+    );
+    final previous = _calculateTotalForTrimester(
+      previousTrimester,
+      pregnancyState.profile!.startDate,
+    );
+
+    if (previous == 0) return null;
+
+    return ExpenseComparisonService.calculatePercentageChange(
+      current: current,
+      previous: previous,
+    );
+  }
+
+  double _calculateTotalForTrimester(int trimester, DateTime startDate) {
+    return state.expenses
+        .where((e) {
+          final date = e["dateTime"] as DateTime;
+          final week = PregnancyCalculator.calculateWeekFromDate(
+            date,
+            startDate,
+          );
+          return PregnancyCalculator.calculateTrimester(week) == trimester;
+        })
+        .fold(0.0, (sum, e) => sum + (e["amount"] as num));
   }
 
   ({double total, double displayTotal, String label}) _calculateViewData(
     List<Map<String, dynamic>> expenses,
   ) {
-    final total = expenses.fold<double>(
+    // Filter display total based on current view/period
+    final now = DateTime.now();
+    List<Map<String, dynamic>> filteredExpenses;
+
+    if (state.viewType == AppStrings.viewTrimester) {
+      filteredExpenses = expenses; // Pregnancy does its own calculation
+    } else if (state.selectedPeriod == AppStrings.viewYear) {
+      filteredExpenses =
+          expenses
+              .where((e) => (e["dateTime"] as DateTime).year == now.year)
+              .toList();
+    } else {
+      // Month or Week view for current month
+      filteredExpenses =
+          expenses
+              .where(
+                (e) =>
+                    (e["dateTime"] as DateTime).month == now.month &&
+                    (e["dateTime"] as DateTime).year == now.year,
+              )
+              .toList();
+    }
+
+    final total = filteredExpenses.fold<double>(
       0.0,
       (sum, e) => sum + (e["amount"] as num),
     );
@@ -131,17 +239,25 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
     fetchExpenses();
   }
 
-  Future<void> deleteExpense(dynamic id) async {
-    // Optimistic update
-    final updatedExpenses = state.expenses.where((e) => e["id"] != id).toList();
-    final viewData = _calculateViewData(updatedExpenses);
-
+  void _updateStateWithExpenses(List<Map<String, dynamic>> expenses) {
+    final viewData = _calculateViewData(expenses);
     state = state.copyWith(
-      expenses: updatedExpenses,
+      expenses: expenses,
       totalExpenses: viewData.total,
       displayTotal: viewData.displayTotal,
       totalLabel: viewData.label,
     );
+  }
+
+  Future<void> deleteExpense(dynamic id) async {
+    final previousExpenses = List<Map<String, dynamic>>.from(state.expenses);
+
+    // Optimistic remove
+    final updatedExpenses =
+        state.expenses
+            .where((e) => e["id"].toString() != id.toString())
+            .toList();
+    _updateStateWithExpenses(updatedExpenses);
 
     try {
       await _client
@@ -149,8 +265,11 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
           .delete()
           .eq(AppStrings.colId, id);
     } catch (e) {
-      // Revert on failure
-      fetchExpenses();
+      // Rollback
+      state = state.copyWith(expenses: previousExpenses);
+      // Recalculate with previous
+      _updateStateWithExpenses(previousExpenses);
+      rethrow;
     }
   }
 
@@ -161,10 +280,12 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
     required DateTime date,
     String? note,
   }) async {
+    final previousExpenses = List<Map<String, dynamic>>.from(state.expenses);
+
     // Optimistic update
     final updatedExpenses =
         state.expenses.map((e) {
-          if (e["id"] == id) {
+          if (e["id"].toString() == id.toString()) {
             return {
               "id": id,
               "title": category,
@@ -177,28 +298,24 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
           return e;
         }).toList();
 
-    final viewData = _calculateViewData(updatedExpenses);
-
-    state = state.copyWith(
-      expenses: updatedExpenses,
-      totalExpenses: viewData.total,
-      displayTotal: viewData.displayTotal,
-      totalLabel: viewData.label,
-    );
+    _updateStateWithExpenses(updatedExpenses);
 
     try {
+      final updateData = {
+        AppStrings.colCategory: category,
+        AppStrings.colAmount: amount,
+        AppStrings.colExpenseDate: DateFormat('yyyy-MM-dd').format(date),
+        AppStrings.colNote: (note == null || note.isEmpty) ? null : note,
+      };
+
       await _client
           .from(AppStrings.tableExpenses)
-          .update({
-            AppStrings.colCategory: category,
-            AppStrings.colAmount: amount,
-            AppStrings.colExpenseDate: date.toUtc().toIso8601String(),
-            AppStrings.colNote: note,
-          })
+          .update(updateData)
           .eq(AppStrings.colId, id);
     } catch (e) {
-      // Revert on failure
-      fetchExpenses();
+      // Rollback
+      _updateStateWithExpenses(previousExpenses);
+      rethrow;
     }
   }
 
@@ -219,7 +336,9 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
                 AppStrings.colUserId: userId,
                 AppStrings.colCategory: title,
                 AppStrings.colAmount: amount,
-                AppStrings.colExpenseDate: date.toUtc().toIso8601String(),
+                AppStrings.colExpenseDate: DateFormat(
+                  'yyyy-MM-dd',
+                ).format(date),
                 AppStrings.colNote: note,
               })
               .select()
@@ -235,17 +354,10 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
       };
 
       final updatedExpenses = [item, ...state.expenses];
-      final viewData = _calculateViewData(updatedExpenses);
-
-      state = state.copyWith(
-        expenses: updatedExpenses,
-        totalExpenses: viewData.total,
-        displayTotal: viewData.displayTotal,
-        totalLabel: viewData.label,
-      );
+      _updateStateWithExpenses(updatedExpenses);
     } catch (e) {
-      // Refresh to be safe on error
       fetchExpenses();
+      rethrow;
     }
   }
 

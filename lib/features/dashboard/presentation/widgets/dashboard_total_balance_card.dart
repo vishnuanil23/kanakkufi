@@ -2,15 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/enums/comparison_type.dart';
 
 class DashboardTotalBalanceCard extends StatelessWidget {
   final double total;
   final String label;
+  final double? monthlyChangePercent;
+  final ComparisonType comparisonType;
 
   const DashboardTotalBalanceCard({
     super.key,
     required this.total,
     required this.label,
+    this.monthlyChangePercent,
+    this.comparisonType = ComparisonType.monthly,
   });
 
   @override
@@ -142,55 +147,33 @@ class DashboardTotalBalanceCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              "SPENDING LIMIT",
-                              style: GoogleFonts.inter(
-                                color: Colors.white.withAlpha(100),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 1,
+                            if (monthlyChangePercent != null)
+                              Row(
+                                children: [
+                                  Icon(
+                                    monthlyChangePercent! >= 0
+                                        ? Icons.arrow_upward_rounded
+                                        : Icons.arrow_downward_rounded,
+                                    color:
+                                        monthlyChangePercent! >= 0
+                                            ? Colors.redAccent.withAlpha(200)
+                                            : Colors.greenAccent.withAlpha(200),
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${monthlyChangePercent!.abs().toStringAsFixed(1)}% "
+                                    "${monthlyChangePercent! >= 0 ? 'more' : 'less'} than "
+                                    "${comparisonType == ComparisonType.trimester ? 'last trimester' : 'last month'}",
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white.withAlpha(180),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Stack(
-                              children: [
-                                Container(
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withAlpha(30),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                                Container(
-                                  height: 4,
-                                  width: 100,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.accent,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ],
-                            ),
                           ],
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          "Tier 1 Elite",
-                          style: GoogleFonts.inter(
-                            color: Colors.white.withAlpha(150),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
                         ),
                       ),
                     ],

@@ -1,12 +1,7 @@
 class PregnancyCalculator {
-  static DateTime calculateStartDate({
-    required int week,
-    required int day,
-  }) {
+  static DateTime calculateStartDate({required int week, required int day}) {
     final totalDays = ((week - 1) * 7) + day;
-    return DateTime.now().subtract(
-      Duration(days: totalDays),
-    );
+    return DateTime.now().subtract(Duration(days: totalDays));
   }
 
   static int calculateWeek(DateTime startDate) {
@@ -23,5 +18,10 @@ class PregnancyCalculator {
     if (week <= 12) return 1;
     if (week <= 27) return 2;
     return 3;
+  }
+
+  static int calculateWeekFromDate(DateTime date, DateTime startDate) {
+    final diff = date.difference(startDate).inDays;
+    return (diff ~/ 7) + 1;
   }
 }

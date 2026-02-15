@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
@@ -35,10 +36,12 @@ class DashboardScreen extends ConsumerWidget {
     final pregnancy = pregnancyState.profile;
 
     final pregnancySummary =
-        (pregnancy != null && pregnancy.isActive)
+        (state.viewType == AppStrings.viewTrimester &&
+                pregnancy != null &&
+                pregnancy.isActive)
             ? "Week ${PregnancyCalculator.calculateWeek(pregnancy.startDate)} • "
                 "Trimester ${PregnancyCalculator.calculateTrimester(PregnancyCalculator.calculateWeek(pregnancy.startDate))}"
-            : null;
+            : "Financial Overview • ${DateFormat('MMMM').format(DateTime.now())}";
 
     final displayAmount = state.displayTotal;
     final totalLabel = state.totalLabel;
@@ -96,6 +99,8 @@ class DashboardScreen extends ConsumerWidget {
               DashboardTotalBalanceCard(
                 total: displayAmount,
                 label: totalLabel,
+                monthlyChangePercent: viewModel.expenseComparisonPercent,
+                comparisonType: viewModel.comparisonType,
               ),
               const SizedBox(height: 32),
               const DashboardSectionHeader(title: "Spending Wisdom"),

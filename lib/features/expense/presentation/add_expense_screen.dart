@@ -296,14 +296,5 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     if (mounted) {
       Navigator.pop(context, payload);
     }
-
-    unawaited(
-      expenseVM.addExpense(
-        category: _selectedCategory.name,
-        amount: finalAmount,
-        date: _selectedDate,
-        note: note.isEmpty ? null : note,
-      ),
-    );
   }
 }
