@@ -1,12 +1,16 @@
-name: Auto Create PR to Develop
+name: Auto PR from Feature to Develop
 
 on:
   push:
     branches:
       - 'feature/**'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
-  create-pull-request:
+  create-pr:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,8 +24,4 @@ jobs:
           base: develop
           branch: ${{ github.ref_name }}
           title: "Auto PR: ${{ github.ref_name }} → develop"
-          body: |
-            This PR was automatically created from `${{ github.ref_name }}` to `develop`.
-
-            Please review before merging.
-          draft: false
+          body: "Automated PR from feature branch."
