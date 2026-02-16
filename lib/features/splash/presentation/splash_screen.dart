@@ -28,8 +28,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       final packageInfo = await PackageInfo.fromPlatform();
       if (mounted) {
         setState(() {
-          _version =
-              "Version ${packageInfo.version}";
+          _version = "Version ${packageInfo.version}";
         });
       }
     } catch (e) {
@@ -88,17 +87,29 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Gold Icon
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.goldLight, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.attach_money_rounded,
-                    color: AppColors.goldLight,
-                    size: 40,
+                // Premium Logo Image
+                Hero(
+                  tag: 'app_logo',
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(51), // 0.2 opacity
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child: Image.asset(
+                        'assets/images/app_logo.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -128,7 +139,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
                 // Tagline
                 Text(
-                  'PREMIUM FINANCE',
+                  'FINANCE, ELEVATED',
                   style: GoogleFonts.inter(
                     color: Colors.white.withAlpha(128), // 0.5 opacity
                     fontSize: 12,

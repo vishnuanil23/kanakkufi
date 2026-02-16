@@ -9,6 +9,7 @@ class AmountInputCard extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final String selectedCurrency;
   final ValueChanged<String> onCurrencyChanged;
+  final bool hasError;
 
   const AmountInputCard({
     super.key,
@@ -16,34 +17,35 @@ class AmountInputCard extends StatelessWidget {
     required this.selectedCurrency,
     required this.onCurrencyChanged,
     this.onChanged,
+    this.hasError = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return ExpenseCard(
-      padding: const EdgeInsets.symmetric(
-        vertical: 6,
-        horizontal: 12,
-      ),
+      borderColor: hasError ? AppColors.error : null,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       child: Row(
         children: [
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: selectedCurrency,
-              icon: const Icon(Icons.keyboard_arrow_down),
+              icon: const Padding(
+                padding: EdgeInsets.only(left: 4),
+                child: Icon(
+                  Icons.expand_more_rounded,
+                  size: 18,
+                  color: AppColors.text,
+                ),
+              ),
               style: GoogleFonts.inter(
                 color: AppColors.text,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
               ),
               items: const [
-                DropdownMenuItem(
-                  value: "AED",
-                  child: Text("AED"),
-                ),
-                DropdownMenuItem(
-                  value: "INR",
-                  child: Text("INR"),
-                ),
+                DropdownMenuItem(value: "AED", child: Text("AED")),
+                DropdownMenuItem(value: "INR", child: Text("INR")),
               ],
               onChanged: (value) {
                 if (value == null) return;
@@ -51,29 +53,32 @@ class AmountInputCard extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: TextField(
               controller: controller,
-              keyboardType:
-                  const TextInputType.numberWithOptions(
-                      decimal: true),
+              textAlignVertical: TextAlignVertical.center,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                  RegExp(r'^\d+\.?\d{0,2}'),
-                )
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
               ],
               style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
                 color: AppColors.text,
               ),
               decoration: InputDecoration(
-                hintText: "Amount",
+                hintText: "0.00",
+                isCollapsed: true,
+                contentPadding: EdgeInsets.zero,
                 hintStyle: GoogleFonts.inter(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textSecondary.withAlpha(120),
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
               onChanged: onChanged,
             ),

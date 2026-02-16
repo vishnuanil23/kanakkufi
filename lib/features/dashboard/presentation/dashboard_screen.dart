@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../auth/presentation/auth_viewmodel.dart';
@@ -10,6 +12,7 @@ import '../../pregnancy/domain/pregnancy_calculator.dart';
 import '../../pregnancy/presentation/pregnancy_viewmodel.dart';
 import 'widgets/dashboard_header.dart';
 import 'widgets/dashboard_total_balance_card.dart';
+
 import 'widgets/dashboard_section_header.dart';
 import 'widgets/dashboard_hook_card.dart';
 import 'widgets/transaction_item.dart';
@@ -24,27 +27,24 @@ class DashboardScreen extends ConsumerWidget {
     final state = ref.watch(dashboardProvider);
     final viewModel = ref.read(dashboardProvider.notifier);
     final pregnancyState = ref.watch(pregnancyProvider);
-    final showTrimesterTabs = state.viewType == 'Trimester';
+    final showTrimesterTabs = state.viewType == AppStrings.viewTrimester;
     final profileState = ref.watch(profileProvider);
     final name =
         profileState.profile?.fullName?.isNotEmpty == true
             ? profileState.profile!.fullName!
             : 'Hello';
-final pregnancy = pregnancyState.profile;
+    final pregnancy = pregnancyState.profile;
 
-final pregnancySummary =
-    (pregnancy != null && pregnancy.isActive)
-        ? "Week ${PregnancyCalculator.calculateWeek(pregnancy.startDate)} • "
-          "Trimester ${PregnancyCalculator.calculateTrimester(
-              PregnancyCalculator.calculateWeek(pregnancy.startDate))}"
-        : null;
+    final pregnancySummary =
+        (state.viewType == AppStrings.viewTrimester &&
+                pregnancy != null &&
+                pregnancy.isActive)
+            ? "Week ${PregnancyCalculator.calculateWeek(pregnancy.startDate)} • "
+                "Trimester ${PregnancyCalculator.calculateTrimester(PregnancyCalculator.calculateWeek(pregnancy.startDate))}"
+            : "Financial Overview • ${DateFormat('MMMM').format(DateTime.now())}";
 
-    final displayAmount =
-        state.viewType == 'Trimester' ? state.totalExpenses * 3.2 : state.totalExpenses;
-    final totalLabel =
-        state.viewType == 'Trimester'
-            ? "Total ${state.selectedPeriod} Spend"
-            : "Total Monthly Spend";
+    final displayAmount = state.displayTotal;
+    final totalLabel = state.totalLabel;
 
     ref.listen(pregnancyProvider, (prev, next) {
       if (!next.isEnabled) {
@@ -99,6 +99,8 @@ final pregnancySummary =
               DashboardTotalBalanceCard(
                 total: displayAmount,
                 label: totalLabel,
+                monthlyChangePercent: viewModel.expenseComparisonPercent,
+                comparisonType: viewModel.comparisonType,
               ),
               const SizedBox(height: 32),
               const DashboardSectionHeader(title: "Spending Wisdom"),
@@ -128,17 +130,19 @@ final pregnancySummary =
             final amount = result["amount"] as double?;
             final title = result["title"] as String?;
             final date = result["date"] as DateTime?;
+            final note = result["note"] as String?;
 
             if (amount != null && title != null && date != null) {
               viewModel.addExpense(
                 title: title,
                 amount: amount,
                 date: date,
+                note: note,
               );
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Expense added")),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text("Expense added")));
               }
             }
           }
@@ -152,6 +156,4 @@ final pregnancySummary =
       ),
     );
   }
-
-
 }

@@ -11,6 +11,8 @@ It focuses on pregnancy-related expenses while being architected for expansion i
 - Supabase (Auth + PostgreSQL)
 - GoRouter
 - fl_chart
+- Slidable (Swipable Actions)
+- intl (Localization & Formatting)
 - Clean Architecture
 - MVVM Pattern
 - Riverpod
@@ -33,6 +35,11 @@ Presentation (Widgets/ViewModels) → Domain (Entities/Interfaces) → Data (Mod
   - `domain`: Business logic entities and repository abstractions.
   - `data`: Data transfer objects (Models) and repository implementations.
 - `lib/shared`: Cross-feature UI components.
+
+### Key Modules
+- **Context-Aware Trends**: Adaptive logic switching between monthly and trimester-based spending analysis.
+- **Optimistic UI**: Immediate UI feedback for transactions with robust database rollback protection.
+- **Simplified Persistence**: Direct `yyyy-MM-dd` date handling to eliminate timezone-related day shifts.
 
 ---
 
@@ -73,7 +80,8 @@ Presentation (Widgets/ViewModels) → Domain (Entities/Interfaces) → Data (Mod
 - [x] Expense create
 - [x] Dashboard summary and charts
 - [x] Pregnancy mode and trimester tracking
-- [ ] Expense edit/delete
+- [x] Expense Edit/Delete (Slidable)
+- [x] Context-aware spending trends
 - [ ] Category management
-- [ ] AI insights
+- [ ] AI Financial Coaching
 - [ ] Web deployment

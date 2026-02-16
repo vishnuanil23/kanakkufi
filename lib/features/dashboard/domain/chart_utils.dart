@@ -47,8 +47,9 @@ class ChartUtils {
           final date = e['dateTime'] as DateTime;
           if (date.year != now.year) continue;
           final index = date.month - windowStartMonth;
-          if (index < 0 || index > 5) continue;
-          buckets[index] += (e['amount'] as num).toDouble();
+          if (index >= 0 && index < 6) {
+            buckets[index] += (e['amount'] as num).toDouble();
+          }
         }
         return List.generate(6, (i) => FlSpot(i.toDouble(), buckets[i]));
     }
@@ -70,7 +71,7 @@ class ChartUtils {
       AppStrings.dec,
     ];
     final start = _yearWindowStartMonth(); // 1 or 7
-    return List.generate(6, (i) => months[start - 1 + i]);
+    return List.generate(6, (index) => months[start - 1 + index]);
   }
 
   static int _yearWindowStartMonth() {

@@ -53,37 +53,25 @@ class AddExpenseViewModel extends ChangeNotifier {
       );
       isSaving = false;
       notifyListeners();
-    } catch (e, st) {
+    } catch (e) {
       errorMessage = e.toString();
       isSaving = false;
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print(st);
-      }
+      // Error is handled by setting errorMessage and notifyListeners below.
       notifyListeners();
     }
   }
 
-  void onAmountOrDateChanged({
-    required double amount,
-    required DateTime date,
-  }) {
+  void onAmountOrDateChanged({required double amount, required DateTime date}) {
     if (_debounce?.isActive ?? false) {
       _debounce!.cancel();
     }
 
-    _debounce = Timer(
-      const Duration(milliseconds: 500),
-      () async {
-        await _convert(amount, date);
-      },
-    );
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      await _convert(amount, date);
+    });
   }
 
-  Future<void> _convert(
-    double amount,
-    DateTime date,
-  ) async {
+  Future<void> _convert(double amount, DateTime date) async {
     if (amount <= 0) return;
 
     try {

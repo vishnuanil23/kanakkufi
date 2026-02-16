@@ -11,12 +11,19 @@ class AppStrings {
   static const String periodTrimester1 = 'Trimester 1';
   static const String periodTrimester2 = 'Trimester 2';
   static const String periodTrimester3 = 'Trimester 3';
+  static const String periodPregnancyAll = 'All';
+
+  // Axis Labels
+  static const String axisT1 = 'T1';
+  static const String axisT2 = 'T2';
+  static const String axisT3 = 'T3';
 
   // Database Tables
   static const String tableExpenses = 'expenses';
   static const String tableUserPregnancyProfiles = 'user_pregnancy_profiles';
 
   // Database Columns
+  static const String colId = 'id';
   static const String colUserId = 'user_id';
   static const String colAmount = 'amount';
   static const String colExpenseDate = 'expense_date';
