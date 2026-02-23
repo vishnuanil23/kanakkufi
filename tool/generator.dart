@@ -4,7 +4,6 @@ import 'package:yaml/yaml.dart';
 void main() async {
   final yamlFile = File('features.yaml');
   if (!yamlFile.existsSync()) {
-    print('❌ Missing features.yaml');
     exit(1);
   }
 
@@ -15,8 +14,6 @@ void main() async {
     final name = feature['name'].toString().toLowerCase();
     generateFeatureStructure(name);
   }
-
-  print('\n✅ All Clean Architecture features generated!');
 }
 
 void generateFeatureStructure(String name) {
@@ -31,8 +28,6 @@ void generateFeatureStructure(String name) {
   _generatePresentation(name, basePath);
   _generateDomain(name, basePath);
   _generateData(name, basePath);
-
-  print('📦 Generated Clean Architecture feature: "$name"');
 }
 
 void _generatePresentation(String name, Directory basePath) {
@@ -91,13 +86,11 @@ abstract class ${pascal}Repository {
 ''');
 
   // Usecase
-  File('${basePath.path}/domain/usecases/get_${name}.dart').writeAsStringSync(
-    '''
+  File('${basePath.path}/domain/usecases/get_$name.dart').writeAsStringSync('''
 class Get${pascal}UseCase {
   // TODO: Implement usecase logic
 }
-''',
-  );
+''');
 }
 
 void _generateData(String name, Directory basePath) {
