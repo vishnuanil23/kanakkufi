@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import '../../dashboard/presentation/dashboard_state.dart';
 import '../presentation/pregnancy_state.dart';
+import '../domain/pregnancy_calculator.dart';
 import '../../../../core/constants/app_strings.dart';
 
 class PregnancyChartUtils {
@@ -30,13 +31,12 @@ class PregnancyChartUtils {
         final amount = (e['amount'] as num).toDouble();
         final pregnancyWeek = (date.difference(startDate).inDays ~/ 7) + 1;
 
-        // T1: 1-13, T2: 14-27, T3: 28-40+
-        if (pregnancyWeek >= 1 && pregnancyWeek <= 13) {
+        final trimester = PregnancyCalculator.calculateTrimester(pregnancyWeek);
+        if (trimester == 1) {
           buckets[0] += amount;
-        } else if (pregnancyWeek >= 14 && pregnancyWeek <= 27) {
+        } else if (trimester == 2) {
           buckets[1] += amount;
-        } else if (pregnancyWeek >= 28) {
-          // 28+
+        } else if (trimester == 3) {
           buckets[2] += amount;
         }
       }

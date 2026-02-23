@@ -8,9 +8,15 @@ import '../data/expense_repository_impl.dart';
 import '../domain/expense_entity.dart';
 import '../domain/expense_repository.dart';
 
+import '../domain/usecases/add_expense_usecase.dart';
+
 final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   final client = ref.read(supabaseClientProvider);
   return ExpenseRepositoryImpl(ExpenseRemoteDataSource(client));
+});
+
+final addExpenseUseCaseProvider = Provider<AddExpenseUseCase>((ref) {
+  return AddExpenseUseCase(ref.read(expenseRepositoryProvider));
 });
 
 final addExpenseProvider = ChangeNotifierProvider<AddExpenseViewModel>(
@@ -41,22 +47,33 @@ class AddExpenseViewModel extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      final repo = ref.read(expenseRepositoryProvider);
-      await repo.addExpense(
-        ExpenseEntity(
-          userId: userId,
-          category: category,
-          amount: amount,
-          expenseDate: date,
-          note: note,
+      final useCase = ref.read(addExpenseUseCaseProvider);
+      final result = await useCase(
+        AddExpenseParams(
+          expense: ExpenseEntity(
+            userId: userId,
+            category: category,
+            amount: amount,
+            expenseDate: date,
+            note: note,
+          ),
         ),
       );
-      isSaving = false;
-      notifyListeners();
+
+      result.fold(
+        (failure) {
+          errorMessage = failure.message;
+          isSaving = false;
+          notifyListeners();
+        },
+        (_) {
+          isSaving = false;
+          notifyListeners();
+        },
+      );
     } catch (e) {
       errorMessage = e.toString();
       isSaving = false;
-      // Error is handled by setting errorMessage and notifyListeners below.
       notifyListeners();
     }
   }

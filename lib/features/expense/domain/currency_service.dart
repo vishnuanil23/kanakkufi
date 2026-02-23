@@ -32,8 +32,10 @@ class CurrencyService {
       } else {
         throw Exception("API error: ${data['error']}");
       }
+    } else if (response.statusCode == 429) {
+      throw Exception("Rate limit exceeded. Please try again later.");
     } else {
-      throw Exception("Failed to fetch conversion");
+      throw Exception("Failed to fetch conversion: ${response.statusCode}");
     }
   }
 }

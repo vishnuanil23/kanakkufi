@@ -1,27 +1,32 @@
-name: Auto PR from Feature to Develop
+name: Auto Merge to Develop
 
 on:
   push:
     branches:
       - 'feature/**'
+      - 'security/**'
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
-  create-pr:
+  merge:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout develop branch
         uses: actions/checkout@v4
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: develop
-          branch: ${{ github.ref_name }}
-          title: "Auto PR: ${{ github.ref_name }} → develop"
-          body: "Automated PR from feature branch."
+          ref: develop
+          fetch-depth: 0
+
+      - name: Merge source branch into develop
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          echo "Source branch: ${{ github.ref_name }}"
+
+          git fetch origin ${{ github.ref_name }}
+          git merge origin/${{ github.ref_name }} --no-ff -m "Auto merge from ${{ github.ref_name }}"
+          git push origin develop

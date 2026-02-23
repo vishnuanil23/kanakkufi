@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/providers/app_lifecycle_provider.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../auth/presentation/auth_viewmodel.dart';
 import '../../profile/presentation/profile_viewmodel.dart';
@@ -49,6 +50,12 @@ class DashboardScreen extends ConsumerWidget {
     ref.listen(pregnancyProvider, (prev, next) {
       if (!next.isEnabled) {
         ref.read(dashboardProvider.notifier).resetToDefaultView();
+      }
+    });
+
+    ref.listen(appLifecycleProvider, (prev, next) {
+      if (next == AppLifecycleState.resumed) {
+        viewModel.fetchExpenses();
       }
     });
 

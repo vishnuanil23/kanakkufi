@@ -1,11 +1,29 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/config/supabase_client_provider.dart';
-import '../domain/profile_entity.dart';
+
 import 'profile_state.dart';
 
-final profileProvider =
-    StateNotifierProvider<ProfileViewModel, ProfileState>(
+import '../domain/usecases/get_profile_usecase.dart';
+import '../domain/usecases/update_profile_usecase.dart';
+import '../data/profile_repository_impl.dart';
+import '../data/profile_remote_datasource.dart';
+import '../domain/profile_repository.dart';
+
+final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
+  final client = ref.read(supabaseClientProvider);
+  return ProfileRepositoryImpl(ProfileRemoteDataSource(client));
+});
+
+final getProfileUseCaseProvider = Provider<GetProfileUseCase>((ref) {
+  return GetProfileUseCase(ref.read(profileRepositoryProvider));
+});
+
+final updateProfileUseCaseProvider = Provider<UpdateProfileUseCase>((ref) {
+  return UpdateProfileUseCase(ref.read(profileRepositoryProvider));
+});
+
+final profileProvider = StateNotifierProvider<ProfileViewModel, ProfileState>(
   (ref) => ProfileViewModel(ref),
 );
 
@@ -16,8 +34,7 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
     fetchProfile();
   }
 
-  SupabaseClient get _client =>
-      ref.read(supabaseClientProvider);
+  SupabaseClient get _client => ref.read(supabaseClientProvider);
 
   Future<void> fetchProfile() async {
     state = state.copyWith(isLoading: true);
@@ -29,21 +46,19 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
         return;
       }
 
-      final data = await _client
-          .from('users')
-          .select()
-          .eq('id', userId)
-          .single();
+      final useCase = ref.read(getProfileUseCaseProvider);
+      final result = await useCase(GetProfileParams(userId: userId));
 
-      state = state.copyWith(
-        profile: ProfileEntity.fromJson(data),
-        isLoading: false,
+      result.fold(
+        (failure) {
+          state = state.copyWith(isLoading: false, error: failure.message);
+        },
+        (profile) {
+          state = state.copyWith(profile: profile, isLoading: false);
+        },
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -57,17 +72,21 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
         return;
       }
 
-      await _client.from('users').update({
-        'full_name': fullName,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', userId);
-
-      await fetchProfile();
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
+      final useCase = ref.read(updateProfileUseCaseProvider);
+      final result = await useCase(
+        UpdateProfileParams(userId: userId, fullName: fullName),
       );
+
+      result.fold(
+        (failure) {
+          state = state.copyWith(isLoading: false, error: failure.message);
+        },
+        (_) async {
+          await fetchProfile();
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 }

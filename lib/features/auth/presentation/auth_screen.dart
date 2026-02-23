@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import 'auth_viewmodel.dart';
+import '../../../core/utils/validator.dart';
+import '../../../core/utils/rate_limiter.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -28,6 +30,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   Timer? _countdownTimer;
   String? _inputError;
   String? _otpError;
+  final _throttler = Throttler(duration: const Duration(seconds: 2));
 
   @override
   void initState() {
@@ -370,9 +373,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   )
                   : TextButton(
                     onPressed: () {
-                      final input = _inputController.text.trim();
-                      ref.read(authProvider.notifier).sendOtp(input);
-                      _startTimer();
+                      _throttler.run(() {
+                        final input = _inputController.text.trim();
+                        ref.read(authProvider.notifier).sendOtp(input);
+                        _startTimer();
+                      });
                     },
                     child: const Text(
                       "Resend Verification Code",
@@ -442,22 +447,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     );
                     HapticFeedback.lightImpact();
 
+                    final input = _inputController.text.trim();
+
                     if (!_otpSent) {
-                      final input = _inputController.text.trim();
                       if (input.isEmpty) {
                         setState(() => _inputError = "Please enter your email");
                         return;
                       }
                       if (!isPhone) {
-                        final emailRegex = RegExp(
-                          r"^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$",
-                        );
-                        if (!emailRegex.hasMatch(input)) {
-                          setState(
-                            () =>
-                                _inputError =
-                                    "Please enter a valid email address",
-                          );
+                        final error = Validator.validateEmail(input);
+                        if (error != null) {
+                          setState(() => _inputError = error);
                           return;
                         }
                       }
@@ -470,23 +470,28 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                             ),
                           ),
                         );
-                      } else {
-                        ref.read(authProvider.notifier).sendOtp(input);
-                      }
-                    } else {
-                      final otp = _otpController.text.trim();
-                      if (otp.length != 6) {
-                        setState(
-                          () => _otpError = "Please enter the 6-digit code",
-                        );
                         return;
                       }
-                      ref
-                          .read(authProvider.notifier)
-                          .verifyOtp(
-                            email: _inputController.text.trim(),
-                            token: otp,
-                          );
+
+                      _throttler.run(() {
+                        ref.read(authProvider.notifier).sendOtp(input);
+                      });
+                    } else {
+                      final otp = _otpController.text.trim();
+                      final error = Validator.validateOtp(otp);
+                      if (error != null) {
+                        setState(() => _otpError = error);
+                        return;
+                      }
+
+                      _throttler.run(() {
+                        ref
+                            .read(authProvider.notifier)
+                            .verifyOtp(
+                              email: input, // Use input (email) here
+                              token: otp,
+                            );
+                      });
                     }
                   },
           style: ElevatedButton.styleFrom(
