@@ -16,7 +16,7 @@ class ProfileModel extends ProfileEntity {
       avatarUrl: json['avatar_url'],
     );
   }
-
+  @override
   Map<String, dynamic> toJson() {
     return {
       'id': id,
