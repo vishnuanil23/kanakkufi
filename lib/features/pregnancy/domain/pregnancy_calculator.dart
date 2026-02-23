@@ -15,7 +15,7 @@ class PregnancyCalculator {
   }
 
   static int calculateTrimester(int week) {
-    if (week <= 12) return 1;
+    if (week <= 13) return 1;
     if (week <= 27) return 2;
     return 3;
   }
