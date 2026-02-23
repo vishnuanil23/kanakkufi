@@ -8,7 +8,13 @@ class ExpenseRemoteDataSource {
   ExpenseRemoteDataSource(this.client);
 
   Future<void> insertExpense(ExpenseEntity expense) async {
-    final model = ExpenseModel.fromEntity(expense);
-    await client.from('expenses').insert(model.toJson());
+    try {
+      final model = ExpenseModel.fromEntity(expense);
+      await client.from('expenses').insert(model.toJson());
+    } catch (e) {
+      throw Exception(
+        e.toString(),
+      ); // In real app, map to specific ServerException
+    }
   }
 }

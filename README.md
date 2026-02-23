@@ -13,6 +13,8 @@ It focuses on pregnancy-related expenses while being architected for expansion i
 - fl_chart
 - Slidable (Swipable Actions)
 - intl (Localization & Formatting)
+- dartz (Functional Programming)
+- equatable (Value Equality)
 - Clean Architecture
 - MVVM Pattern
 - Riverpod
@@ -24,8 +26,13 @@ It focuses on pregnancy-related expenses while being architected for expansion i
 KanakkuFi follows **Clean Architecture** with a **Feature-first** structure, ensuring high maintainability and testability.
 
 ```
-Presentation (Widgets/ViewModels) → Domain (Entities/Interfaces) → Data (Models/Repos) → Supabase
+Presentation (Widgets/ViewModels) → Domain (UseCases/Entities) → Data (Models/Repos/DataSources) → Supabase
 ```
+
+### Core Concepts
+- **Use Cases**: Encapsulate specific business rules (e.g., `AddExpenseUseCase`, `GetProfileUseCase`).
+- **Repositories**: Abstract unique data sources (Supabase) behind clean interfaces.
+- **Failures**: Standardized error handling using `Either<Failure, Success>` pattern.
 
 ### Folder Structure
 
