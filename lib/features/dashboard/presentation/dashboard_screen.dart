@@ -19,6 +19,11 @@ import 'widgets/dashboard_hook_card.dart';
 import 'widgets/transaction_item.dart';
 import 'widgets/statistics_section.dart';
 import 'dashboard_viewmodel.dart';
+import '../../sms_tracker/presentation/sms_tracker_viewmodel.dart';
+import '../../sms_tracker/presentation/widgets/sms_sync_banner.dart';
+import '../../sms_tracker/presentation/widgets/insights_section.dart';
+import '../../sms_tracker/presentation/widgets/bank_accounts_section.dart';
+import '../../sms_tracker/presentation/widgets/credit_cards_section.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -28,6 +33,7 @@ class DashboardScreen extends ConsumerWidget {
     final state = ref.watch(dashboardProvider);
     final viewModel = ref.read(dashboardProvider.notifier);
     final pregnancyState = ref.watch(pregnancyProvider);
+    final smsState = ref.watch(smsTrackerProvider);
     final showTrimesterTabs = state.viewType == AppStrings.viewTrimester;
     final profileState = ref.watch(profileProvider);
     final name =
@@ -71,6 +77,7 @@ class DashboardScreen extends ConsumerWidget {
                 viewModel.fetchExpenses(),
                 ref.read(profileProvider.notifier).fetchProfile(),
                 ref.read(pregnancyProvider.notifier).fetchActiveProfile(),
+                ref.read(smsTrackerProvider.notifier).syncSms(),
               ]);
             } catch (_) {}
           },
@@ -124,6 +131,38 @@ class DashboardScreen extends ConsumerWidget {
                   monthlyChangePercent: viewModel.expenseComparisonPercent,
                   comparisonType: viewModel.comparisonType,
                 ),
+                // ── Track 1: SMS Auto-Track Banner ────────────────────────
+                if (smsState.unreviewedCount > 0) ...[
+                  const SizedBox(height: 18),
+                  SmsSyncBanner(
+                    count: smsState.unreviewedCount,
+                    totalAmount: smsState.totalDebits,
+                    onTap: () => context.push('/sms-tracker'),
+                  ),
+                ],
+                // ── Track 2: Spending Insights Carousel ───────────────────
+                if (smsState.insights.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  InsightsSection(
+                    insights: smsState.insights,
+                    onInsightTap: (_) => context.push('/sms-tracker'),
+                  ),
+                ],
+                // ── Track 2: Bank Accounts Balances ───────────────────────
+                if (smsState.bankBalances.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  BankAccountsSection(
+                    accounts: smsState.bankBalances,
+                    onViewAll: () => context.push('/sms-tracker'),
+                  ),
+                ],
+                // ── Track 2: Credit Cards Section ─────────────────────────
+                if (smsState.creditCards.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  CreditCardsSection(
+                    cards: smsState.creditCards,
+                  ),
+                ],
                 const SizedBox(height: 32),
                 const DashboardSectionHeader(title: "Spending Wisdom"),
                 const SizedBox(height: 12),

@@ -159,7 +159,7 @@ class ChartSection extends StatelessWidget {
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
                       getTooltipColor: (_) => AppColors.primary,
-                      tooltipRoundedRadius: 8,
+                      tooltipBorderRadius: BorderRadius.circular(8),
                       getTooltipItems: (List<LineBarSpot> touchedSpots) {
                         return touchedSpots.map((barSpot) {
                           return LineTooltipItem(

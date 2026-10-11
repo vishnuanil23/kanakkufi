@@ -1,8 +1,13 @@
+import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../dashboard/presentation/widgets/edit_expense_bottom_sheet.dart';
 import '../../profile/presentation/edit_profile_screen.dart';
@@ -24,138 +29,68 @@ class PregnancyReportScreen extends ConsumerStatefulWidget {
 class _PregnancyReportScreenState extends ConsumerState<PregnancyReportScreen> {
   final TextEditingController _searchController = TextEditingController();
 
+  // ── Share card ───────────────────────────────────────────────────
+  final GlobalKey _heroCardKey = GlobalKey();
+  bool _isSharing = false;
+
+  /// Captures the dark hero card as a 3× PNG and shares it natively
+  Future<void> _shareHeroCard(PregnancyReportState state) async {
+    if (_isSharing) return;
+    setState(() => _isSharing = true);
+
+    try {
+      // Give the widget one frame to render with the key attached
+      await Future.delayed(const Duration(milliseconds: 80));
+
+      final boundary = _heroCardKey.currentContext
+          ?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) throw Exception('Card not rendered yet');
+
+      // 3× pixel ratio = crisp on high-DPI screens
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) throw Exception('Failed to encode image');
+
+      final Uint8List pngBytes = byteData.buffer.asUint8List();
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/kanakkufi_pregnancy_report.png');
+      await file.writeAsBytes(pngBytes);
+
+      final data = state.reportData!;
+      final totalFmt = NumberFormat('#,##0.00', 'en_IN');
+      final caption =
+          '🤰 My Pregnancy Expense Summary\n'
+          '💰 Total: ₹${totalFmt.format(data.totalExpenses)}\n'
+          '📅 Week ${data.currentWeek} • Trimester ${data.currentTrimester}\n'
+          '📊 ${(data.progress * 100).toInt()}% complete • ${data.daysRemaining} days left\n'
+          '\nTracked with KanakkuFi 💜';
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'image/png')],
+          text: caption,
+          subject: 'My Pregnancy Expense Report',
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not share card: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _showShareReportSheet(BuildContext context, String reportText) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.description_outlined,
-                        color: AppColors.primary,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Export Report Summary",
-                            style: GoogleFonts.inter(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.text,
-                            ),
-                          ),
-                          Text(
-                            "Copy or share structured summary",
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  height: 220,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      reportText,
-                      style: GoogleFonts.firaCode(
-                        fontSize: 11.5,
-                        color: AppColors.text,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: reportText));
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Report summary copied to clipboard!"),
-                          backgroundColor: AppColors.primary,
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(
-                    Icons.copy_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  label: Text(
-                    "Copy to Clipboard",
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   void _showSortMenu(BuildContext context, WidgetRef ref) {
@@ -327,16 +262,24 @@ class _PregnancyReportScreenState extends ConsumerState<PregnancyReportScreen> {
               onPressed: () => _showSortMenu(context, ref),
             ),
             IconButton(
-              icon: const Icon(
-                Icons.share_outlined,
-                color: AppColors.text,
-                size: 22,
-              ),
-              tooltip: "Export Summary",
-              onPressed: () {
-                final reportText = notifier.getFormattedReportText();
-                _showShareReportSheet(context, reportText);
-              },
+              icon: _isSharing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.text,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.share_outlined,
+                      color: AppColors.text,
+                      size: 22,
+                    ),
+              tooltip: 'Share Card',
+              onPressed: state.reportData == null
+                  ? null
+                  : () => _shareHeroCard(state),
             ),
           ],
           const SizedBox(width: 8),
@@ -364,8 +307,11 @@ class _PregnancyReportScreenState extends ConsumerState<PregnancyReportScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Hero Overview Card
-                        PregnancyReportHeroCard(data: state.reportData!),
+                        // Hero Overview Card — wrapped in RepaintBoundary for image capture
+                        RepaintBoundary(
+                          key: _heroCardKey,
+                          child: PregnancyReportHeroCard(data: state.reportData!),
+                        ),
                         const SizedBox(height: 24),
 
                         // Trimester Breakdown
