@@ -5,6 +5,8 @@ import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
 import '../../features/expense/presentation/add_expense_screen.dart';
 
+import '../../features/pregnancy/presentation/pregnancy_report_screen.dart';
+
 final appRouter = GoRouter(
   initialLocation: '/',
   routes: [
@@ -21,6 +23,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/edit-profile',
       builder: (context, state) => const EditProfileSheet(),
+    ),
+    GoRoute(
+      path: '/pregnancy-report',
+      builder: (context, state) => const PregnancyReportScreen(),
     ),
   ],
 );

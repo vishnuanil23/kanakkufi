@@ -62,70 +62,102 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 20),
-              DashboardHeader(
-                name: name,
-                pregnancySummary: pregnancySummary,
-                onProfileTap: () {
-                  showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.white,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(24),
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          backgroundColor: Colors.white,
+          onRefresh: () async {
+            try {
+              await Future.wait([
+                viewModel.fetchExpenses(),
+                ref.read(profileProvider.notifier).fetchProfile(),
+                ref.read(pregnancyProvider.notifier).fetchActiveProfile(),
+              ]);
+            } catch (_) {}
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                DashboardHeader(
+                  name: name,
+                  pregnancySummary: pregnancySummary,
+                  onProfileTap: () {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
                       ),
-                    ),
-                    builder: (_) => const EditProfileSheet(),
-                  );
-                },
-                onLogoutTap: () async {
-                  final confirmed = await showConfirmationDialog(
-                    context: context,
-                    title: 'Logout',
-                    message: 'Are you sure you want to logout?',
-                    confirmText: 'Logout',
-                    cancelText: 'Cancel',
-                    isDangerous: true,
-                  );
+                      builder: (_) => const EditProfileSheet(),
+                    );
+                  },
+                  onLogoutTap: () async {
+                    final confirmed = await showConfirmationDialog(
+                      context: context,
+                      title: 'Logout',
+                      message: 'Are you sure you want to logout?',
+                      confirmText: 'Logout',
+                      cancelText: 'Cancel',
+                      isDangerous: true,
+                    );
 
-                  if (confirmed == true) {
-                    await ref.read(authProvider.notifier).logout();
-                    if (context.mounted) {
-                      context.go('/auth');
+                    if (confirmed == true) {
+                      await ref.read(authProvider.notifier).logout();
+                      if (context.mounted) {
+                        context.go('/auth');
+                      }
                     }
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-              DashboardTotalBalanceCard(
-                total: displayAmount,
-                label: totalLabel,
-                monthlyChangePercent: viewModel.expenseComparisonPercent,
-                comparisonType: viewModel.comparisonType,
-              ),
-              const SizedBox(height: 32),
-              const DashboardSectionHeader(title: "Spending Wisdom"),
-              const SizedBox(height: 12),
-              const DashboardHookCard(),
-              const SizedBox(height: 32),
-              StatisticsSection(
-                state: state,
-                viewModel: viewModel,
-                pregnancyState: pregnancyState,
-                showTrimesterTabs: showTrimesterTabs,
-              ),
-              const SizedBox(height: 32),
-              const DashboardSectionHeader(title: "Recent Transactions"),
-              const SizedBox(height: 12),
-              ...state.expenses.map((e) => TransactionItem(item: e)),
-              const SizedBox(height: 100), // Space for FAB
-            ],
+                  },
+                ),
+                const SizedBox(height: 24),
+                DashboardTotalBalanceCard(
+                  total: displayAmount,
+                  label: totalLabel,
+                  monthlyChangePercent: viewModel.expenseComparisonPercent,
+                  comparisonType: viewModel.comparisonType,
+                ),
+                const SizedBox(height: 32),
+                const DashboardSectionHeader(title: "Spending Wisdom"),
+                const SizedBox(height: 12),
+                const DashboardHookCard(),
+                const SizedBox(height: 32),
+                StatisticsSection(
+                  state: state,
+                  viewModel: viewModel,
+                  pregnancyState: pregnancyState,
+                  showTrimesterTabs: showTrimesterTabs,
+                ),
+                const SizedBox(height: 32),
+                DashboardSectionHeader(
+                  title:
+                      showTrimesterTabs
+                          ? "Pregnancy Transactions"
+                          : "Recent Transactions",
+                ),
+                const SizedBox(height: 12),
+                ...((showTrimesterTabs && pregnancy != null && pregnancy.isActive)
+                        ? state.expenses.where((e) {
+                          final dt = e["dateTime"];
+                          if (dt is! DateTime) return true;
+                          return dt.isAfter(
+                            pregnancy.startDate.subtract(
+                              const Duration(days: 1),
+                            ),
+                          );
+                        }).toList()
+                        : state.expenses)
+                    .map((e) => TransactionItem(item: e)),
+                const SizedBox(height: 100), // Space for FAB
+              ],
+            ),
           ),
         ),
       ),

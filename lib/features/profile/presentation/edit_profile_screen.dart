@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_colors.dart';
 import 'profile_state.dart';
 import 'profile_viewmodel.dart';
 import 'widgets/profile_action_button.dart';
@@ -155,6 +157,78 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     }
   },
 ),
+              if (pregnancyState.profile?.isActive == true) ...[
+                const SizedBox(height: 8),
+                Material(
+                  color: AppColors.primary.withAlpha(8),
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: AppColors.accent.withAlpha(60),
+                      width: 1,
+                    ),
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push('/pregnancy-report');
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withAlpha(25),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.assessment_rounded,
+                              color: AppColors.goldDark,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Pregnancy Expense Report",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: AppColors.text,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  "View trimester breakdown & bills alone",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 14,
+                            color: AppColors.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               if (state.error != null) ...[
                 Text(
