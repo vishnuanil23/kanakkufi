@@ -2,6 +2,7 @@ import 'package:workmanager/workmanager.dart';
 import '../../features/sms_tracker/data/sms_parser_service.dart';
 import '../../features/sms_tracker/data/sms_service.dart';
 import 'notification_service.dart';
+import 'quote_service.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Task name constants  (keep in sync with registration in main.dart)
@@ -47,6 +48,10 @@ Future<void> _runSmsSync(Map<String, dynamic>? inputData) async {
         );
       }
     }
+    // Also prefetch daily quote in background
+    try {
+      await QuoteService.getDailyQuote();
+    } catch (_) {}
   } catch (e) {
     // Ignore background exceptions
   }

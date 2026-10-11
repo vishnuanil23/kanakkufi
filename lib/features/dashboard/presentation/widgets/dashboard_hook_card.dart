@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/quote_service.dart';
 
-class DashboardHookCard extends StatelessWidget {
+class DashboardHookCard extends ConsumerWidget {
   const DashboardHookCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quoteAsync = ref.watch(quoteProvider);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border.withAlpha(80)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
@@ -37,27 +42,112 @@ class DashboardHookCard extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Spending Wisdom",
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: AppColors.navyDeep,
+            child: quoteAsync.when(
+              data: (quote) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Spending Wisdom",
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: AppColors.navyDeep,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  "Your spending on entertainment is 15% higher than last month. Consider a small adjustment.",
-                  style: GoogleFonts.inter(
-                    color: Colors.black.withAlpha(128),
-                    fontSize: 13,
-                    height: 1.4,
+                  const SizedBox(height: 8),
+                  Text(
+                    '“${quote.content}”',
+                    style: GoogleFonts.inter(
+                      color: AppColors.text,
+                      fontSize: 13,
+                      height: 1.45,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '— ${quote.author}',
+                      style: GoogleFonts.inter(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              loading: () => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Spending Wisdom",
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: AppColors.navyDeep,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '“${Quote.defaultWisdom.content}”',
+                    style: GoogleFonts.inter(
+                      color: AppColors.text.withAlpha(180),
+                      fontSize: 13,
+                      height: 1.45,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '— ${Quote.defaultWisdom.author}',
+                      style: GoogleFonts.inter(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              error: (err, stack) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Spending Wisdom",
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: AppColors.navyDeep,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '“${Quote.defaultWisdom.content}”',
+                    style: GoogleFonts.inter(
+                      color: AppColors.text,
+                      fontSize: 13,
+                      height: 1.45,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '— ${Quote.defaultWisdom.author}',
+                      style: GoogleFonts.inter(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

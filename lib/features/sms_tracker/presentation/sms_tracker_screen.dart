@@ -264,11 +264,6 @@ class SmsTrackerScreen extends ConsumerWidget {
                                 style: TextStyle(color: Colors.white),
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            TextButton(
-                              onPressed: () => viewModel.syncSms(forceMock: true),
-                              child: const Text('Try Demo Mode'),
-                            ),
                           ],
                         ),
                       ],
@@ -452,11 +447,6 @@ class SmsTrackerScreen extends ConsumerWidget {
                               fontSize: 13,
                               color: AppColors.textSecondary,
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          OutlinedButton(
-                            onPressed: () => viewModel.syncSms(forceMock: true),
-                            child: const Text('Load Demo Transactions'),
                           ),
                         ],
                       ),

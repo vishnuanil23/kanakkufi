@@ -106,9 +106,9 @@ class SmsTrackerViewModel extends StateNotifier<SmsTrackerState> {
     await syncSms();
   }
 
-  Future<void> syncSms({bool forceMock = false}) async {
+  Future<void> syncSms() async {
     state = state.copyWith(isLoading: true);
-    await _repository.syncMessages(forceMock: forceMock);
+    await _repository.syncMessages();
     state = state.copyWith(
       isLoading: false,
       allTransactions: _repository.allTransactions,

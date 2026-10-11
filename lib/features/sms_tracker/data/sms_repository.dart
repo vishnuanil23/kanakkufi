@@ -25,8 +25,8 @@ class SmsRepository {
   List<CreditCardDetails> get creditCards => _creditCards;
   Set<String> get confirmedIds => _confirmedIds;
 
-  Future<void> syncMessages({bool forceMock = false}) async {
-    final rawMessages = await SmsService.readMessages(forceMock: forceMock);
+  Future<void> syncMessages() async {
+    final rawMessages = await SmsService.readMessages();
     _allTransactions = SmsParserService.parseAll(rawMessages);
     _bankBalances = SmsParserService.extractBankBalances(_allTransactions);
     _creditCards = SmsParserService.extractCreditCards(rawMessages);
