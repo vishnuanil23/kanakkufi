@@ -47,32 +47,39 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
     _inputController.addListener(_clearInputError);
     _otpController.addListener(_clearOtpError);
+    _tabController.addListener(_handleTabChange);
+  }
 
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        setState(() {
-          isPhone = _tabController.index == 0;
-          _otpSent = false;
-          _inputController.clear();
-          _inputError = null;
-          _stopTimer();
-        });
-      }
-    });
+  void _handleTabChange() {
+    if (_tabController.indexIsChanging) {
+      _cancelTimer();
+      setState(() {
+        isPhone = _tabController.index == 0;
+        _otpSent = false;
+        _inputController.clear();
+        _inputError = null;
+        _resendCountdown = 0;
+      });
+    }
   }
 
   void _clearInputError() {
-    if (_inputError != null) setState(() => _inputError = null);
+    if (_inputError != null && mounted) setState(() => _inputError = null);
   }
 
   void _clearOtpError() {
-    if (_otpError != null) setState(() => _otpError = null);
+    if (_otpError != null && mounted) setState(() => _otpError = null);
   }
 
   void _startTimer() {
+    _cancelTimer();
     setState(() => _resendCountdown = 30);
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_resendCountdown == 0) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_resendCountdown <= 1) {
         _stopTimer();
       } else {
         setState(() => _resendCountdown--);
@@ -80,18 +87,28 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     });
   }
 
-  void _stopTimer() {
+  void _cancelTimer() {
     _countdownTimer?.cancel();
-    setState(() => _resendCountdown = 0);
+    _countdownTimer = null;
+  }
+
+  void _stopTimer() {
+    _cancelTimer();
+    if (mounted) {
+      setState(() => _resendCountdown = 0);
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _inputController.removeListener(_clearInputError);
+    _otpController.removeListener(_clearOtpError);
+    _cancelTimer();
     _tabController.dispose();
     _buttonController.dispose();
     _inputController.dispose();
     _otpController.dispose();
-    _stopTimer();
     super.dispose();
   }
 
@@ -323,11 +340,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             ),
             TextButton(
               onPressed: () {
+                _cancelTimer();
                 setState(() {
                   _otpSent = false;
                   _otpController.clear();
                   _otpError = null;
-                  _stopTimer();
+                  _resendCountdown = 0;
                 });
               },
               child: const Text(
