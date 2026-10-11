@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/supabase_config.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/background_task_manager.dart';
+import 'features/sms_tracker/data/sms_service.dart';
 import 'app.dart';
 
 void main() async {
@@ -21,6 +22,11 @@ void main() async {
   // Initialise WorkManager for background SMS sync
   await BackgroundTaskManager.init();
   await BackgroundTaskManager.registerSmsSyncTask();
+
+  // Start real-time SMS listening if permission granted
+  try {
+    await SmsService.startListening();
+  } catch (_) {}
 
   runApp(
     const ProviderScope(

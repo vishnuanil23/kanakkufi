@@ -15,8 +15,11 @@ class PregnancyChartUtils {
 
     final startDate = pregnancyState.profile!.startDate;
 
-    final expenses =
-        state.expenses.where((e) => e['dateTime'] is DateTime).toList();
+    final expenses = state.expenses.where((e) {
+      if (e['dateTime'] is! DateTime) return false;
+      final t = e['title'].toString().toLowerCase();
+      return !t.contains('income') && !t.contains('self transfer');
+    }).toList();
 
     if (expenses.isEmpty) {
       return const [FlSpot(0, 0), FlSpot(1, 0)];
@@ -76,12 +79,17 @@ class PregnancyChartUtils {
     required String period,
     required DateTime startDate,
   }) {
+    final validExpenses = expenses.where((e) {
+      final t = e['title'].toString().toLowerCase();
+      return !t.contains('income') && !t.contains('self transfer');
+    }).toList();
+
     double total = 0.0;
 
     // For "All" in Pregnancy view, we just return sum of everything provided
     // (assuming the list passed is already filtered to pregnancy start date)
     if (period == AppStrings.periodPregnancyAll) {
-      for (final e in expenses) {
+      for (final e in validExpenses) {
         total += (e['amount'] as num).toDouble();
       }
       return total;
@@ -91,7 +99,7 @@ class PregnancyChartUtils {
     final startWeek = config.$1;
     final endWeek = config.$2;
 
-    for (final e in expenses) {
+    for (final e in validExpenses) {
       final date = e['dateTime'] as DateTime;
       final amount = (e['amount'] as num).toDouble();
       final pregnancyWeek = (date.difference(startDate).inDays ~/ 7) + 1;

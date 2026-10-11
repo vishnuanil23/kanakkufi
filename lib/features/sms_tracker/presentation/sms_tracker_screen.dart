@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../../shared/widgets/confirmation_dialog.dart';
 import '../../../core/constants/app_colors.dart';
 import '../data/sms_parser_service.dart';
 import 'sms_tracker_viewmodel.dart';
@@ -9,25 +10,32 @@ import 'sms_tracker_viewmodel.dart';
 class SmsTrackerScreen extends ConsumerWidget {
   const SmsTrackerScreen({super.key});
 
-  void _showConfirmSheet(
+  void _showEditCategorySheet(
     BuildContext context,
     WidgetRef ref,
     ParsedTransaction txn,
   ) {
-    String selectedCategory = txn.autoCategory ?? '🍔 Food & Dining';
-    final titleController = TextEditingController(
-      text: txn.merchant ?? txn.bankName ?? 'Expense',
-    );
+    String selectedCategory = txn.resolveCategory();
 
     const categories = [
       '🍔 Food & Dining',
       '🛒 Shopping',
       '🚗 Transport',
-      '🏥 Health & Medical',
+      '🏥 Health',
       '🏠 Utilities',
       '📺 Entertainment',
       '⛽ Fuel',
+      '⚡ UPI',
+      '💳 Card',
+      '🏦 Bank Transfer',
       '💼 Income',
+      '🔄 Self Transfer',
+      '📚 Education',
+      '📱 Mobile Recharge',
+      '🏨 Travel & Stay',
+      '💪 Fitness',
+      '🛡️ Insurance',
+      '🏦 Loan/EMI',
       '📌 Other',
     ];
 
@@ -65,33 +73,22 @@ class SmsTrackerScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      txn.isDebit ? 'Confirm Expense' : 'Confirm Income',
+                      'Change Category',
                       style: GoogleFonts.outfit(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.text,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: titleController,
-                      decoration: InputDecoration(
-                        labelText: 'Transaction Title',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 6),
                     Text(
-                      'Category',
+                      txn.resolveTitle(),
                       style: GoogleFonts.inter(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -107,8 +104,11 @@ class SmsTrackerScreen extends ConsumerWidget {
                           },
                           selectedColor: AppColors.primary.withAlpha(40),
                           labelStyle: TextStyle(
-                            color: isSelected ? AppColors.primary : AppColors.text,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color:
+                                isSelected ? AppColors.primary : AppColors.text,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         );
                       }).toList(),
@@ -128,16 +128,12 @@ class SmsTrackerScreen extends ConsumerWidget {
                           Navigator.pop(ctx);
                           await ref
                               .read(smsTrackerProvider.notifier)
-                              .confirmTransaction(
-                                transaction: txn,
-                                category: selectedCategory,
-                                title: titleController.text.trim(),
-                              );
+                              .updateCategory(txn.id, selectedCategory);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Added ₹${txn.amount.toStringAsFixed(0)} to your expenses!',
+                                  'Updated category to $selectedCategory',
                                 ),
                                 backgroundColor: const Color(0xFF10B981),
                               ),
@@ -145,7 +141,7 @@ class SmsTrackerScreen extends ConsumerWidget {
                           }
                         },
                         child: Text(
-                          'Save to Expenses',
+                          'Update Category',
                           style: GoogleFonts.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -178,7 +174,7 @@ class SmsTrackerScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          'SMS Expense Tracker',
+          'SMS Tracker (Auto-Sync)',
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.w700,
             fontSize: 20,
@@ -189,7 +185,37 @@ class SmsTrackerScreen extends ConsumerWidget {
         elevation: 0,
         actions: [
           IconButton(
-            tooltip: 'Sync SMS',
+            tooltip: 'Remove all previous SMS & track from now on',
+            icon: const Icon(
+              Icons.delete_sweep_rounded,
+              color: AppColors.error,
+            ),
+            onPressed: () async {
+              final confirmed = await showConfirmationDialog(
+                context: context,
+                title: 'Reset SMS Tracking',
+                message:
+                    'This will remove all previously auto-added SMS data from your expenses and income, and only track new live SMS from now onwards.',
+                confirmText: 'Remove & Reset',
+                isDangerous: true,
+              );
+              if (confirmed == true) {
+                final count = await viewModel.purgePreviousSmsData();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Removed $count previous SMS records. Tracking live SMS from now on.',
+                      ),
+                      backgroundColor: const Color(0xFF10B981),
+                    ),
+                  );
+                }
+              }
+            },
+          ),
+          IconButton(
+            tooltip: 'Sync live SMS',
             icon: state.isLoading
                 ? const SizedBox(
                     width: 20,
@@ -212,7 +238,7 @@ class SmsTrackerScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Permission Warning Banner if not granted
                 if (!state.hasPermission)
@@ -245,32 +271,86 @@ class SmsTrackerScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Allow KanakkuFi to read incoming bank SMS to automatically track expenses. We never read personal messages.',
+                          'Allow KanakkuFi to read incoming bank SMS to automatically track expenses & income. No manual review needed.',
                           style: GoogleFonts.inter(
                             fontSize: 12.5,
                             color: const Color(0xFF78350F),
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD97706),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD97706),
+                          ),
+                          onPressed: () => viewModel.requestPermission(),
+                          child: const Text(
+                            'Grant Access',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  // Automatic Sync Status Banner
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF10B981).withAlpha(25),
+                          const Color(0xFF047857).withAlpha(12),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF10B981).withAlpha(80),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Live SMS Tracking (From Now On)',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF065F46),
+                                ),
                               ),
-                              onPressed: () => viewModel.requestPermission(),
-                              child: const Text(
-                                'Grant Access',
-                                style: TextStyle(color: Colors.white),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Previous SMS data removed. All new incoming SMS from now onwards are auto-added without review.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11.5,
+                                  color: const Color(0xFF047857),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
 
-                // Summary Stats (Total In & Out)
+                // Summary Stats (Total Expenses & Total Income)
                 Row(
                   children: [
                     Expanded(
@@ -300,7 +380,7 @@ class SmsTrackerScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Debits',
+                                  'Expenses',
                                   style: GoogleFonts.inter(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -350,7 +430,7 @@ class SmsTrackerScreen extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Credits',
+                                  'Income',
                                   style: GoogleFonts.inter(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -375,6 +455,100 @@ class SmsTrackerScreen extends ConsumerWidget {
                   ],
                 ),
 
+                if (state.totalSelfTransfers > 0) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFC7D2FE)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4F46E5).withAlpha(25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.swap_horiz_rounded,
+                            color: Color(0xFF4F46E5),
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Self Transfers: ${currencyFmt.format(state.totalSelfTransfers)} (${state.selfTransfersCount})',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF3730A3),
+                                ),
+                              ),
+                              Text(
+                                'Internal transfers • Removed from expenses & income',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: const Color(0xFF4338CA).withAlpha(180),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(0xFF4F46E5),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () async {
+                            final count = await viewModel
+                                .removeSelfTransfersFromExpenses();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    count > 0
+                                        ? 'Removed $count self-transfer entries from expenses'
+                                        : 'All self-transfers are removed from expenses',
+                                  ),
+                                  backgroundColor: const Color(0xFF10B981),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.delete_sweep_rounded,
+                            size: 16,
+                          ),
+                          label: const Text(
+                            'Clean Up',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 20),
 
                 // Filter Chips
@@ -384,28 +558,41 @@ class SmsTrackerScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       _buildFilterChip(
-                        label: 'All (${state.pendingTransactions.length})',
+                        label: 'All (${state.allTransactions.length})',
                         filterKey: 'all',
                         current: state.activeFilter,
                         onTap: () => viewModel.setFilter('all'),
                       ),
                       _buildFilterChip(
-                        label: 'Debits',
+                        label: 'Debits (Expenses)',
                         filterKey: 'debits',
                         current: state.activeFilter,
                         onTap: () => viewModel.setFilter('debits'),
                       ),
                       _buildFilterChip(
-                        label: 'Credits',
+                        label: 'Credits (Income)',
                         filterKey: 'credits',
                         current: state.activeFilter,
                         onTap: () => viewModel.setFilter('credits'),
                       ),
+                      if (state.selfTransfersCount > 0)
+                        _buildFilterChip(
+                          label: '🔄 Self Transfers (${state.selfTransfersCount})',
+                          filterKey: 'transfers',
+                          current: state.activeFilter,
+                          onTap: () => viewModel.setFilter('transfers'),
+                        ),
                       _buildFilterChip(
                         label: 'UPI Only',
                         filterKey: 'upi',
                         current: state.activeFilter,
                         onTap: () => viewModel.setFilter('upi'),
+                      ),
+                      _buildFilterChip(
+                        label: 'Card Only',
+                        filterKey: 'card',
+                        current: state.activeFilter,
+                        onTap: () => viewModel.setFilter('card'),
                       ),
                       _buildFilterChip(
                         label: 'Bank SMS',
@@ -433,7 +620,7 @@ class SmsTrackerScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'All Caught Up!',
+                            'No Live SMS Transactions Yet',
                             style: GoogleFonts.outfit(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -442,11 +629,12 @@ class SmsTrackerScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'No pending transactions to review in this filter.',
+                            'Previous SMS data removed. All new SMS received from now on will appear here.',
                             style: GoogleFonts.inter(
                               fontSize: 13,
                               color: AppColors.textSecondary,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
@@ -508,8 +696,8 @@ class SmsTrackerScreen extends ConsumerWidget {
     ParsedTransaction txn,
     NumberFormat currencyFmt,
   ) {
-    final viewModel = ref.read(smsTrackerProvider.notifier);
     final isDebit = txn.isDebit;
+    final resolvedCategory = txn.resolveCategory();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -535,19 +723,23 @@ class SmsTrackerScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isDebit
-                      ? const Color(0xFFFEE2E2)
-                      : const Color(0xFFD1FAE5),
+                  color: txn.isSelfTransfer
+                      ? const Color(0xFFEEF2FF)
+                      : (isDebit
+                          ? const Color(0xFFFEE2E2)
+                          : const Color(0xFFD1FAE5)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  txn.bankName ?? (txn.isUpi ? 'UPI' : 'Bank'),
+                  txn.bankName ?? (txn.isUpi ? 'UPI' : (txn.isCard ? 'Card' : 'Bank')),
                   style: GoogleFonts.inter(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isDebit
-                        ? const Color(0xFFDC2626)
-                        : const Color(0xFF059669),
+                    color: txn.isSelfTransfer
+                        ? const Color(0xFF4F46E5)
+                        : (isDebit
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF059669)),
                   ),
                 ),
               ),
@@ -561,11 +753,44 @@ class SmsTrackerScreen extends ConsumerWidget {
                   ),
                 ),
               const Spacer(),
-              Text(
-                DateFormat('dd MMM, hh:mm a').format(txn.date),
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
+              // Status Badge (Auto-Added or Self Transfer)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: txn.isSelfTransfer
+                      ? const Color(0xFFEEF2FF)
+                      : const Color(0xFFD1FAE5),
+                  borderRadius: BorderRadius.circular(6),
+                  border: txn.isSelfTransfer
+                      ? Border.all(color: const Color(0xFFC7D2FE))
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      txn.isSelfTransfer
+                          ? Icons.swap_horiz_rounded
+                          : Icons.check_circle_rounded,
+                      size: 12,
+                      color: txn.isSelfTransfer
+                          ? const Color(0xFF4F46E5)
+                          : const Color(0xFF059669),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      txn.isSelfTransfer
+                          ? 'Self Transfer (Excluded)'
+                          : (isDebit ? 'Added to Expenses' : 'Added to Income'),
+                      style: GoogleFonts.inter(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: txn.isSelfTransfer
+                            ? const Color(0xFF4F46E5)
+                            : const Color(0xFF059669),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -579,8 +804,7 @@ class SmsTrackerScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      txn.merchant ??
-                          (txn.isUpi ? 'UPI Transfer' : 'Bank Transaction'),
+                      txn.resolveTitle(),
                       style: GoogleFonts.outfit(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -588,25 +812,59 @@ class SmsTrackerScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      txn.autoCategory ?? '📌 Uncategorized',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: txn.isSelfTransfer
+                            ? const Color(0xFFEEF2FF)
+                            : AppColors.background,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: txn.isSelfTransfer
+                              ? const Color(0xFFC7D2FE)
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: Text(
+                        resolvedCategory,
+                        style: GoogleFonts.inter(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: txn.isSelfTransfer
+                              ? const Color(0xFF4F46E5)
+                              : AppColors.primary,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              Text(
-                '${isDebit ? '-' : '+'}${currencyFmt.format(txn.amount)}',
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: isDebit
-                      ? const Color(0xFFEF4444)
-                      : const Color(0xFF10B981),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    txn.isSelfTransfer
+                        ? currencyFmt.format(txn.amount)
+                        : '${isDebit ? '-' : '+'}${currencyFmt.format(txn.amount)}',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: txn.isSelfTransfer
+                          ? const Color(0xFF4F46E5)
+                          : (isDebit
+                              ? const Color(0xFFEF4444)
+                              : const Color(0xFF10B981)),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat('dd MMM, hh:mm a').format(txn.date),
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -620,38 +878,58 @@ class SmsTrackerScreen extends ConsumerWidget {
               ),
             ),
           ],
-          const SizedBox(height: 14),
-          const Divider(height: 1),
           const SizedBox(height: 10),
+          const Divider(height: 1),
+          const SizedBox(height: 6),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               TextButton.icon(
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: txn.isSelfTransfer
+                      ? const Color(0xFF4F46E5)
+                      : AppColors.textSecondary,
+                  padding: EdgeInsets.zero,
                 ),
-                onPressed: () => viewModel.dismissTransaction(txn.id),
-                icon: const Icon(Icons.close_rounded, size: 16),
-                label: const Text('Dismiss'),
+                onPressed: () async {
+                  await ref
+                      .read(smsTrackerProvider.notifier)
+                      .toggleSelfTransfer(txn.id, !txn.isSelfTransfer);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          txn.isSelfTransfer
+                              ? 'Unmarked from Self Transfer'
+                              : 'Saved as 🔄 Self Transfer (excluded from spend & income)',
+                        ),
+                        backgroundColor: const Color(0xFF4F46E5),
+                      ),
+                    );
+                  }
+                },
+                icon: Icon(
+                  txn.isSelfTransfer
+                      ? Icons.check_circle_rounded
+                      : Icons.swap_horiz_rounded,
+                  size: 15,
+                ),
+                label: Text(
+                  txn.isSelfTransfer ? 'Self Transfer' : 'Mark Self Transfer',
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                ),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: AppColors.primary,
                 ),
-                onPressed: () => _showConfirmSheet(context, ref, txn),
-                icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                onPressed: () => _showEditCategorySheet(context, ref, txn),
+                icon: const Icon(Icons.edit_note_rounded, size: 16),
                 label: const Text(
-                  'Confirm',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+                  'Edit Category',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ),
             ],

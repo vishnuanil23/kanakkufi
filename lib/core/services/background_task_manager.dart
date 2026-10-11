@@ -1,6 +1,5 @@
 import 'package:workmanager/workmanager.dart';
-import '../../features/sms_tracker/data/sms_parser_service.dart';
-import '../../features/sms_tracker/data/sms_service.dart';
+import '../../features/sms_tracker/data/sms_repository.dart';
 import 'notification_service.dart';
 import 'quote_service.dart';
 
@@ -30,24 +29,13 @@ void workmanagerCallbackDispatcher() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// SMS Sync Task  (reads new SMS, parses, saves to local storage)
+// SMS Sync Task  (reads new SMS from live cutoff onwards, auto-saves to expenses/income)
 // ──────────────────────────────────────────────────────────────────────────────
 Future<void> _runSmsSync(Map<String, dynamic>? inputData) async {
   try {
-    final rawMessages = await SmsService.readMessages();
-    final parsed = SmsParserService.parseAll(rawMessages);
-    if (parsed.isNotEmpty) {
-      await NotificationService.init();
-      final latest = parsed.first;
-      if (DateTime.now().difference(latest.date).inHours <= 3) {
-        await NotificationService.showTransactionAlert(
-          amount: latest.amount,
-          isDebit: latest.isDebit,
-          source: latest.bankName ?? (latest.isUpi ? 'UPI' : 'Bank'),
-          merchant: latest.merchant,
-        );
-      }
-    }
+    // Automatically sync and add any new SMS from live cutoff date onwards
+    await SmsRepository.instance.syncMessages();
+
     // Also prefetch daily quote in background
     try {
       await QuoteService.getDailyQuote();

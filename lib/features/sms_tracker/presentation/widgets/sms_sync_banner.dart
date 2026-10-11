@@ -71,7 +71,7 @@ class SmsSyncBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Auto-detected • Total: ${currencyFmt.format(totalAmount)}',
+                    'Auto-tracked • Total: ${currencyFmt.format(totalAmount)}',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -82,15 +82,32 @@ class SmsSyncBanner extends StatelessWidget {
             ),
             Row(
               children: [
-                Text(
-                  'Review',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withAlpha(30),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 14,
+                        color: Color(0xFF059669),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Synced',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF059669),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 const Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 12,

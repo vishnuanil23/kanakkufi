@@ -79,13 +79,19 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
     _updateStateWithExpenses(expenses);
   }
 
+  bool _isExcluded(dynamic title) {
+    final t = title.toString().toLowerCase();
+    return t.contains('income') || t.contains('self transfer');
+  }
+
   double get currentMonthTotal {
     final now = DateTime.now();
     return state.expenses
         .where(
           (e) =>
               (e["dateTime"] as DateTime).month == now.month &&
-              (e["dateTime"] as DateTime).year == now.year,
+              (e["dateTime"] as DateTime).year == now.year &&
+              !_isExcluded(e["title"]),
         )
         .fold(0.0, (sum, e) => sum + (e["amount"] as num));
   }
@@ -97,7 +103,21 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
         .where(
           (e) =>
               (e["dateTime"] as DateTime).month == prev.month &&
-              (e["dateTime"] as DateTime).year == prev.year,
+              (e["dateTime"] as DateTime).year == prev.year &&
+              !_isExcluded(e["title"]),
+        )
+        .fold(0.0, (sum, e) => sum + (e["amount"] as num));
+  }
+
+  double get currentMonthIncome {
+    final now = DateTime.now();
+    return state.expenses
+        .where(
+          (e) =>
+              (e["dateTime"] as DateTime).month == now.month &&
+              (e["dateTime"] as DateTime).year == now.year &&
+              e["title"].toString().toLowerCase().contains('income') &&
+              !e["title"].toString().toLowerCase().contains('self transfer'),
         )
         .fold(0.0, (sum, e) => sum + (e["amount"] as num));
   }
@@ -158,6 +178,7 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
   double _calculateTotalForTrimester(int trimester, DateTime startDate) {
     return state.expenses
         .where((e) {
+          if (_isExcluded(e["title"])) return false;
           final date = e["dateTime"] as DateTime;
           final week = PregnancyCalculator.calculateWeekFromDate(
             date,
@@ -194,10 +215,12 @@ class DashboardViewModel extends StateNotifier<DashboardState> {
               .toList();
     }
 
-    final total = filteredExpenses.fold<double>(
-      0.0,
-      (sum, e) => sum + (e["amount"] as num),
-    );
+    final total = filteredExpenses
+        .where((e) => !_isExcluded(e["title"]))
+        .fold<double>(
+          0.0,
+          (sum, e) => sum + (e["amount"] as num),
+        );
 
     double displayTotal = total;
     String label = "Total Monthly Spend";

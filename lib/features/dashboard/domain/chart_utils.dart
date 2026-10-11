@@ -6,8 +6,11 @@ import '../../../../core/constants/app_strings.dart';
 class ChartUtils {
   static List<FlSpot> buildChartSpots({required DashboardState state}) {
     final now = DateTime.now();
-    final expenses =
-        state.expenses.where((e) => e['dateTime'] is DateTime).toList();
+    final expenses = state.expenses.where((e) {
+      if (e['dateTime'] is! DateTime) return false;
+      final t = e['title'].toString().toLowerCase();
+      return !t.contains('income') && !t.contains('self transfer');
+    }).toList();
 
     if (expenses.isEmpty) {
       return const [FlSpot(0, 0), FlSpot(1, 0)];

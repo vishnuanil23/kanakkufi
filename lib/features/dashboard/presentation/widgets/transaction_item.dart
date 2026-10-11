@@ -52,8 +52,11 @@ class TransactionItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final category = getCategoryByName(item["title"].toString());
+    final title = item["title"].toString();
+    final category = getCategoryByName(title);
     final dateTime = item["dateTime"];
+    final isIncome = title.toLowerCase().contains('income');
+    final isSelfTransfer = title.toLowerCase().contains('self transfer');
 
     return Slidable(
       key: ValueKey(item["id"]),
@@ -106,10 +109,22 @@ class TransactionItem extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withAlpha(25),
+                  color: isSelfTransfer
+                      ? const Color(0xFFEEF2FF)
+                      : (isIncome
+                          ? const Color(0xFFD1FAE5)
+                          : AppColors.accent.withAlpha(25)),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(category.icon, color: AppColors.goldDark, size: 24),
+                child: Icon(
+                  category.icon,
+                  color: isSelfTransfer
+                      ? const Color(0xFF4F46E5)
+                      : (isIncome
+                          ? const Color(0xFF059669)
+                          : AppColors.goldDark),
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -117,13 +132,46 @@ class TransactionItem extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item["title"].toString(),
+                      title,
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppColors.primary,
+                        color: isSelfTransfer
+                            ? const Color(0xFF3730A3)
+                            : (isIncome
+                                ? const Color(0xFF065F46)
+                                : AppColors.primary),
                       ),
                     ),
+                    if (isSelfTransfer)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3, bottom: 2),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(5),
+                                border: Border.all(
+                                  color: const Color(0xFFC7D2FE),
+                                ),
+                              ),
+                              child: Text(
+                                'Self Transfer • Excluded from totals',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF4F46E5),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (item["note"] != null &&
                         item["note"].toString().isNotEmpty)
                       Padding(
@@ -152,11 +200,15 @@ class TransactionItem extends ConsumerWidget {
                 ),
               ),
               Text(
-                "₹${NumberFormat("#,##0.00", "en_IN").format(double.tryParse(item["amount"].toString()) ?? 0)}",
+                "${isIncome ? '+' : ''}₹${NumberFormat("#,##0.00", "en_IN").format(double.tryParse(item["amount"].toString()) ?? 0)}",
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w700,
                   fontSize: 17,
-                  color: AppColors.navyDeep,
+                  color: isSelfTransfer
+                      ? const Color(0xFF4F46E5)
+                      : (isIncome
+                          ? const Color(0xFF10B981)
+                          : AppColors.navyDeep),
                 ),
               ),
             ],

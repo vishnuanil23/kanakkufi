@@ -25,6 +25,7 @@ class ParsedTransaction {
   final DateTime date;
   final String rawSms;
   final String senderAddress;
+  final bool isSelfTransfer;
 
   const ParsedTransaction({
     required this.id,
@@ -42,13 +43,113 @@ class ParsedTransaction {
     required this.date,
     required this.rawSms,
     required this.senderAddress,
+    this.isSelfTransfer = false,
   });
+
+  ParsedTransaction copyWith({
+    String? id,
+    double? amount,
+    TransactionType? type,
+    TransactionSource? source,
+    String? bankName,
+    String? accountLast4,
+    String? merchant,
+    String? upiRefId,
+    String? vpa,
+    String? upiApp,
+    String? autoCategory,
+    double? availableBalance,
+    DateTime? date,
+    String? rawSms,
+    String? senderAddress,
+    bool? isSelfTransfer,
+  }) {
+    return ParsedTransaction(
+      id: id ?? this.id,
+      amount: amount ?? this.amount,
+      type: type ?? this.type,
+      source: source ?? this.source,
+      bankName: bankName ?? this.bankName,
+      accountLast4: accountLast4 ?? this.accountLast4,
+      merchant: merchant ?? this.merchant,
+      upiRefId: upiRefId ?? this.upiRefId,
+      vpa: vpa ?? this.vpa,
+      upiApp: upiApp ?? this.upiApp,
+      autoCategory: autoCategory ?? this.autoCategory,
+      availableBalance: availableBalance ?? this.availableBalance,
+      date: date ?? this.date,
+      rawSms: rawSms ?? this.rawSms,
+      senderAddress: senderAddress ?? this.senderAddress,
+      isSelfTransfer: isSelfTransfer ?? this.isSelfTransfer,
+    );
+  }
 
   bool get isDebit => type == TransactionType.debit;
   bool get isCredit => type == TransactionType.credit;
   bool get isUpi =>
       source == TransactionSource.upiApp ||
       source == TransactionSource.upiBank;
+  bool get isCard =>
+      source == TransactionSource.creditCard ||
+      RegExp(r'\b(?:credit\s*card|debit\s*card|card\s*(?:no\.?|xx|\*\*)|cardmember)\b', caseSensitive: false)
+          .hasMatch(rawSms);
+
+  /// Resolves the final category to store in expenses/income table.
+  /// If transaction is a self-transfer between user accounts, returns '🔄 Self Transfer'.
+  /// If a specific category was detected from SMS, returns it.
+  /// Otherwise, falls back to payment mode ('💼 Income', '⚡ UPI', '💳 Card', '🏦 Bank Transfer').
+  String resolveCategory() {
+    if (isSelfTransfer) {
+      return '🔄 Self Transfer';
+    }
+
+    if (isCredit) {
+      if (autoCategory != null &&
+          autoCategory != '📌 Uncategorized' &&
+          (autoCategory!.contains('Income') ||
+              autoCategory!.contains('Salary') ||
+              autoCategory!.contains('Cashback') ||
+              autoCategory!.contains('Refund'))) {
+        return autoCategory!;
+      }
+      return '💼 Income';
+    }
+
+    // Debit transaction
+    if (autoCategory != null && autoCategory != '📌 Uncategorized') {
+      return autoCategory!;
+    }
+
+    if (isUpi) {
+      return '⚡ UPI';
+    }
+    if (isCard) {
+      return '💳 Card';
+    }
+    if (bankName != null || source == TransactionSource.bankSms) {
+      return '🏦 Bank Transfer';
+    }
+    return '📌 Other';
+  }
+
+  /// Human-friendly display title for the transaction
+  String resolveTitle() {
+    if (isSelfTransfer) {
+      final bank = bankName ?? (accountLast4 != null ? '••$accountLast4' : 'Account');
+      return 'Self Transfer ($bank)';
+    }
+    if (merchant != null && merchant!.trim().isNotEmpty) {
+      return merchant!.trim();
+    }
+    if (isCredit) {
+      if (isUpi) return 'UPI Credit';
+      return bankName != null ? '$bankName Credit' : 'Income';
+    } else {
+      if (isUpi) return 'UPI Payment';
+      if (isCard) return bankName != null ? '$bankName Card' : 'Card Payment';
+      return bankName != null ? '$bankName Debit' : 'Expense';
+    }
+  }
 }
 
 @immutable
@@ -152,9 +253,15 @@ class _Patterns {
     caseSensitive: false,
   );
 
-  // UPI Ref / Txn ID
+  // UPI Ref / Txn ID / IMPS / UTR / RRN
   static final upiRef = RegExp(
-    r'(?:UPI\s*(?:Ref(?:erence)?|Txn|ID|No)[:.]?\s*)(\w{10,})',
+    r'(?:UPI\s*(?:Ref(?:erence)?|Txn|ID|No)|IMPS(?:\s*(?:Ref|No|Txn))?|UTR|RRN)[:.]?\s*(\w{8,})',
+    caseSensitive: false,
+  );
+
+  // Self-transfer keywords in SMS
+  static final selfTransferKeywords = RegExp(
+    r'\b(?:self\s*transfer|own\s*(?:a/?c|acc(?:ount)?)|transfer(?:red)?\s*(?:to\s*)?self|to\s*your\s*(?:own|other)\s*(?:a/?c|acc(?:ount)?)|internal\s*transfer|between\s*own\s*accounts|linked\s*acc(?:ount)?)\b',
     caseSensitive: false,
   );
 
@@ -166,7 +273,7 @@ class _Patterns {
 
   // Debit keywords
   static final debitKeywords = RegExp(
-    r'\b(?:debited?|paid|payment\s+(?:of|done|success)|purchase|withdrawn?|sent|deduct)\b',
+    r'\b(?:debited?|paid|payment(?:\s+(?:of|done|success))?|purchase|withdrawn?|sent|deduct|spent|charged|used)\b',
     caseSensitive: false,
   );
 
@@ -235,30 +342,37 @@ class _SenderMapper {
 class _CategoryMapper {
   static const _rules = <List<Object>>[
     [['swiggy', 'zomato', 'dominos', 'kfc', 'mcdonalds', 'pizza', 'cafe',
-      'restaurant', 'dining', 'food'], '🍔 Food & Dining'],
+      'restaurant', 'dining', 'food', 'starbucks', 'chai', 'burger', 'biryani',
+      'bake', 'bakery', 'zepto', 'blinkit', 'instamart', 'bigbasket'], '🍔 Food & Dining'],
     [['amazon', 'flipkart', 'myntra', 'meesho', 'ajio', 'nykaa', 'snapdeal',
-      'shop', 'store', 'mart'], '🛒 Shopping'],
+      'shop', 'store', 'mart', 'dmart', 'croma', 'reliance', 'tatacliq',
+      'zara', 'decathlon'], '🛒 Shopping'],
     [['uber', 'ola', 'rapido', 'namma', 'metro', 'irctc', 'bus', 'train',
-      'travel', 'taxi', 'auto'], '🚗 Transport'],
+      'travel', 'taxi', 'auto', 'redbus', 'abhibus', 'chalo'], '🚗 Transport'],
     [['netflix', 'spotify', 'hotstar', 'prime', 'zee5', 'sony', 'jio',
-      'youtube', 'entertainment', 'cinema', 'movie'], '📺 Entertainment'],
+      'youtube', 'entertainment', 'cinema', 'movie', 'pvr', 'inox',
+      'bookmyshow'], '📺 Entertainment'],
     [['hospital', 'pharmacy', 'medic', 'clinic', 'doctor', 'health',
-      'apollo', 'max', 'fortis', 'manipal'], '🏥 Health'],
-    [['electricity', 'bescom', 'tneb', 'water', 'gas', 'lpg',
-      'bill', 'utility', 'broadband', 'wifi'], '🏠 Utilities'],
+      'apollo', 'max', 'fortis', 'manipal', '1mg', 'netmeds', 'pharmeasy',
+      'medplus', 'scan', 'lab'], '🏥 Health'],
+    [['electricity', 'bescom', 'tneb', 'msedcl', 'uppcl', 'cesc', 'water',
+      'gas', 'lpg', 'indane', 'hp gas', 'bharat gas', 'bill', 'utility',
+      'broadband', 'wifi', 'airtel broadband', 'jiofiber', 'act fibernet'], '🏠 Utilities'],
     [['petrol', 'diesel', 'fuel', 'hpcl', 'bpcl', 'iocl', 'shell',
       'indian oil', 'bharat petroleum'], '⛽ Fuel'],
     [['school', 'college', 'university', 'fees', 'tuition', 'coaching',
-      'course', 'udemy', 'coursera', 'education'], '📚 Education'],
-    [['salary', 'payroll', 'stipend', 'wages', 'income'], '💼 Income'],
+      'course', 'udemy', 'coursera', 'education', 'allen', 'unacademy'], '📚 Education'],
+    [['salary', 'payroll', 'stipend', 'wages', 'income', 'credit interest',
+      'cashback', 'dividend', 'bonus', 'refund'], '💼 Income'],
     [['recharge', 'jio', 'airtel', 'vi ', 'vodafone', 'bsnl',
       'mobile', 'prepaid'], '📱 Mobile Recharge'],
     [['hotel', 'booking', 'makemytrip', 'goibibo', 'oyo',
-      'airbnb', 'lodge'], '🏨 Travel & Stay'],
-    [['gym', 'yoga', 'fitness', 'sports', 'cult'], '💪 Fitness'],
-    [['insurance', 'lic', 'term', 'policy', 'premium'], '🛡️ Insurance'],
+      'airbnb', 'lodge', 'ixigo', 'agoda', 'yatra'], '🏨 Travel & Stay'],
+    [['gym', 'yoga', 'fitness', 'sports', 'cult', 'cultfit'], '💪 Fitness'],
+    [['insurance', 'lic', 'term', 'policy', 'premium', 'star health',
+      'hdfc ergo', 'icici lombard'], '🛡️ Insurance'],
     [['emi', 'loan', 'home loan', 'car loan', 'hdfc loan',
-      'bajaj', 'repayment'], '🏦 Loan/EMI'],
+      'bajaj finance', 'repayment', 'cred app'], '🏦 Loan/EMI'],
   ];
 
   static String categorise(String? merchant, String? vpa, String rawSms) {
@@ -282,6 +396,22 @@ class _CategoryMapper {
 
 class SmsParserService {
   SmsParserService._();
+
+  static DateTime? _customTrackingStartDate;
+  static final DateTime _defaultLiveCutoff = DateTime.now();
+
+  /// Cutoff date for tracking: from this cutoff timestamp onwards.
+  /// Defaults to live tracking (from now on) unless overridden.
+  static DateTime get smsTrackingStartDate =>
+      _customTrackingStartDate ?? _defaultLiveCutoff;
+
+  static void setTrackingStartDate(DateTime date) {
+    _customTrackingStartDate = date;
+  }
+
+  static void resetTrackingStartDate() {
+    _customTrackingStartDate = null;
+  }
 
   /// Parse a single SMS message. Returns null if not a financial transaction.
   static ParsedTransaction? parse({
@@ -338,13 +468,22 @@ class SmsParserService {
         trimmed.toLowerCase().contains('upi') ||
         vpa != null;
 
+    final bool isCardSms = RegExp(
+          r'\b(?:credit\s*card|debit\s*card|card\s*(?:no\.?|xx|\*\*)|cardmember)\b',
+          caseSensitive: false,
+        ).hasMatch(trimmed) ||
+        sender.toUpperCase().contains('CARD') ||
+        sender.toUpperCase().contains('CRD');
+
     final source = upiApp != null
         ? TransactionSource.upiApp
         : isUpiSms
             ? TransactionSource.upiBank
-            : bankName != null
-                ? TransactionSource.bankSms
-                : TransactionSource.bankSms;
+            : isCardSms
+                ? TransactionSource.creditCard
+                : bankName != null
+                    ? TransactionSource.bankSms
+                    : TransactionSource.bankSms;
 
     // Extract merchant name from UPI SMS
     final merchant = _extractMerchant(trimmed, vpa, type);
@@ -352,9 +491,13 @@ class SmsParserService {
     // Auto-categorise
     final autoCategory = _CategoryMapper.categorise(merchant, vpa, trimmed);
 
-    // Build unique ID (hash of sender + date + amount to avoid duplicates)
-    final idSource = '${sender}_${date.millisecondsSinceEpoch}_$amount';
-    final id = idSource.hashCode.abs().toString();
+    // Detect if SMS body explicitly indicates self transfer
+    final bool isSelfTransferExplicit =
+        _Patterns.selfTransferKeywords.hasMatch(trimmed);
+
+    // Build unique ID (stable hash of sender + date + amount to avoid duplicates across restarts)
+    final cleanSender = sender.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final id = '${cleanSender}_${date.millisecondsSinceEpoch}_${(amount * 100).toInt()}';
 
     return ParsedTransaction(
       id: id,
@@ -367,18 +510,104 @@ class SmsParserService {
       upiRefId: upiRef,
       vpa: vpa,
       upiApp: upiApp,
-      autoCategory: autoCategory,
+      autoCategory: isSelfTransferExplicit ? '🔄 Self Transfer' : autoCategory,
       availableBalance: availableBalance,
       date: date,
       rawSms: body,
       senderAddress: sender,
+      isSelfTransfer: isSelfTransferExplicit,
     );
   }
 
-  /// Parse a list of raw SMS messages
+  /// Identifies and pairs self-transfers between user's accounts.
+  /// 1. Same UPI Ref / UTR between Debit & Credit
+  /// 2. Same amount within 10-minute window between different known accounts/banks
+  /// Determines if two transactions form a self-transfer pair
+  static bool isPairMatch(ParsedTransaction a, ParsedTransaction b) {
+    if (a.amount != b.amount) return false;
+    if (a.isDebit == b.isDebit) return false; // Must be 1 debit and 1 credit
+
+    // Check ref id (UPI Ref / IMPS / UTR)
+    if (a.upiRefId != null &&
+        b.upiRefId != null &&
+        a.upiRefId!.isNotEmpty &&
+        a.upiRefId!.toLowerCase() == b.upiRefId!.toLowerCase()) {
+      return true;
+    }
+
+    // Check same amount within 10 minutes between different accounts or banks
+    final timeDiffMinutes = b.date.difference(a.date).inMinutes.abs();
+    if (timeDiffMinutes <= 10) {
+      final diffAccounts = a.accountLast4 != null &&
+          b.accountLast4 != null &&
+          a.accountLast4 != b.accountLast4;
+      final diffBanks = a.bankName != null &&
+          b.bankName != null &&
+          a.bankName != b.bankName;
+
+      if (diffAccounts || diffBanks) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// 3. Credit remitter matches user's name
+  static List<ParsedTransaction> identifySelfTransfers(
+    List<ParsedTransaction> txns, {
+    String? userName,
+  }) {
+    final selfTransferIds = <String>{};
+
+    // 1. Explicit keyword check or user name match
+    for (final t in txns) {
+      if (t.isSelfTransfer) {
+        selfTransferIds.add(t.id);
+        continue;
+      }
+
+      if (userName != null && userName.trim().length >= 3) {
+        final cleanUser = userName.trim().toLowerCase();
+        final rawLower = t.rawSms.toLowerCase();
+        if (rawLower.contains('from $cleanUser') ||
+            rawLower.contains('by $cleanUser') ||
+            rawLower.contains('to $cleanUser') ||
+            rawLower.contains('transfer to $cleanUser') ||
+            rawLower.contains('transfer from $cleanUser')) {
+          selfTransferIds.add(t.id);
+        }
+      }
+    }
+
+    // 2. Debit-Credit pair matching
+    final debits = txns.where((t) => t.isDebit).toList();
+    final credits = txns.where((t) => t.isCredit).toList();
+
+    for (final d in debits) {
+      for (final c in credits) {
+        if (isPairMatch(d, c)) {
+          selfTransferIds.add(d.id);
+          selfTransferIds.add(c.id);
+        }
+      }
+    }
+
+    return txns.map((t) {
+      if (selfTransferIds.contains(t.id) && !t.isSelfTransfer) {
+        return t.copyWith(
+          isSelfTransfer: true,
+          autoCategory: '🔄 Self Transfer',
+        );
+      }
+      return t;
+    }).toList();
+  }
+
+  /// Parse a list of raw SMS messages and automatically identify self-transfers
   static List<ParsedTransaction> parseAll(
-    List<({String body, String sender, DateTime date})> messages,
-  ) {
+    List<({String body, String sender, DateTime date})> messages, {
+    String? userName,
+  }) {
     final results = <ParsedTransaction>[];
     final seenIds = <String>{};
 
@@ -393,9 +622,12 @@ class SmsParserService {
       }
     }
 
+    // Auto-identify self transfers across all transactions
+    final identified = identifySelfTransfers(results, userName: userName);
+
     // Sort newest first
-    results.sort((a, b) => b.date.compareTo(a.date));
-    return results;
+    identified.sort((a, b) => b.date.compareTo(a.date));
+    return identified;
   }
 
   /// Groups transactions by bank and extracts latest known balances and trends
